@@ -1,0 +1,1 @@
+export type { IProtectedRouteProps } from './protected-route-props';
