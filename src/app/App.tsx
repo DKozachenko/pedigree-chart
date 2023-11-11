@@ -9,7 +9,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={
-        <ProtectedRoute condition={userState.isGuest || userState.name === 'Диана'} redirectPath="auth">
+        <ProtectedRoute condition={userState.isAdmin || userState.isGuest || userState.name === 'Диана'} redirectPath="auth">
           <Chart></Chart>
         </ProtectedRoute>
       }></Route>

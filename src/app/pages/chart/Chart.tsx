@@ -1,6 +1,12 @@
+import { Box } from '@mui/material';
+import { Diagram, UserInfo } from './components';
+
 export function Chart() {
   return (
-    <h1>Некий защищенный роут, который может просматривать некая белая цисгендерная женщина по имени Диана</h1>
+    <Box component="section" position="relative" sx={{ height: '100%' }}>
+      <Diagram></Diagram>
+      <UserInfo></UserInfo>
+    </Box>
   )
 }
 

@@ -4,7 +4,7 @@ import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useDispatch } from 'react-redux';
 import { Dispatch } from '@reduxjs/toolkit';
-import { setGuest, setUser, ISetUserPayload } from '../../../store';
+import { setGuest, setUser, setAdmin, ISetUserPayload } from '../../../store';
 import * as yup from "yup"
 
 const formSchema = yup
@@ -36,6 +36,11 @@ export function LoginForm() {
 
   const loginAsGuest = (): void => {
     dispatch(setGuest());
+    navigate('/');
+  }
+
+  const loginAsAdmin = (): void => {
+    dispatch(setAdmin());
     navigate('/');
   }
 
@@ -107,14 +112,19 @@ export function LoginForm() {
       </Box>
 
       <Box component="div" sx={{ 
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gridTemplateRows: 'repeat(2, 1fr)',
         gap: '10px'
        }}>
-        <Button type="button" sx={{ flexBasis: '50%' }} variant="outlined" onClick={loginAsGuest}>
+        <Button disabled={!isValid} type="submit" sx={{ gridColumn: '1 / -1' }} variant="contained">
+          Войти
+        </Button>
+        <Button type="button" variant="outlined" onClick={loginAsGuest}>
           Войти как гость
         </Button>
-        <Button disabled={!isValid} type="submit" sx={{ flexBasis: '50%' }} variant="contained">
-          Войти
+        <Button type="button" variant="outlined" onClick={loginAsAdmin}>
+          Войти как админ
         </Button>
       </Box>
     </Box>
