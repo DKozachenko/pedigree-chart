@@ -1,0 +1,1 @@
+export const RELATIVE_NODE_BACKGROUND_COLOR = "#f0f0f0";

@@ -1,0 +1,1 @@
+export const RELATIVE_NODE_BORDER_COLOR = "#05b671";

@@ -2,14 +2,14 @@ import { Box, Button, InputLabel, MenuItem, Paper, Select, SelectChangeEvent, Ty
 import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch } from '../../../store';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { useState } from 'react';
+import { useState, Dispatch as ReactDispatch, SetStateAction } from 'react';
 
 export function UserInfo() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const userState: IUserState = useCustomSelector(selectUser);
 
-  const [currentRelative, setCurrentRelative] = useState('');
+  const [currentRelative, setCurrentRelative]: [string, ReactDispatch<SetStateAction<string>>] = useState('');
   
   const extractUserInfo: () => string = () => {
     if (userState.isAdmin) {
