@@ -1,51 +1,62 @@
 import * as go from 'gojs';
 
+// https://gojs.net/latest/samples/genogram.html
 export class GenogramLayout extends go.LayeredDigraphLayout {
+  spouseSpacing: number = 0;
+
   constructor() {
     super();
     this.alignOption = go.LayeredDigraphLayout.AlignAll;
     this.initializeOption = go.LayeredDigraphLayout.InitDepthFirstIn;
-    this.spouseSpacing = 30;  // minimum space between spouses
+    // минимальное расстояние между супругами
+    this.spouseSpacing = 30;
     this.isRouting = false;
   }
 
-  makeNetwork(coll) {
-    // generate LayoutEdges for each parent-child Link
-    const net = this.createNetwork();
+  public makeNetwork(coll: go.Diagram | go.Group | go.Iterable<go.Node>): go.LayeredDigraphNetwork {
+    // генерация LayoutEdges для каждой родительско-дочерней ссылки
+    const netword: go.LayeredDigraphNetwork = this.createNetwork();
     if (coll instanceof go.Diagram) {
-      this.add(net, coll.nodes, true);
-      this.add(net, coll.links, true);
+      this.add(netword, coll.nodes, true);
+      this.add(netword, coll.links, true);
     } else if (coll instanceof go.Group) {
-      this.add(net, coll.memberParts, false);
+      this.add(netword, coll.memberParts, false);
     } else if (coll.iterator) {
-      this.add(net, coll.iterator, false);
+      this.add(netword, coll.iterator, false);
     }
-    return net;
+    return netword;
   }
 
-  // internal method for creating LayeredDigraphNetwork where husband/wife pairs are represented
-  // by a single LayeredDigraphVertex corresponding to the label Node on the marriage Link
-  add(net, coll, nonmemberonly) {
-    const horiz = this.direction == 0.0 || this.direction == 180.0;
-    const multiSpousePeople = new go.Set();
-    // consider all Nodes in the given collection
-    const it = coll.iterator;
+  // внутренний метод для создания LayeredDigraphNetwork, где представлены пары муж/жена
+  // по одному LayeredDigraphVertex, соответствующему метке Node на брачной ссылке
+  add(network: go.LayeredDigraphNetwork, coll: go.Iterator<go.Node | go.Link | go.Part>, nonMemberOnly: boolean): void {
+    const horizontally: boolean = this.direction == 0.0 || this.direction == 180.0;
+    const multiSpousePeople: go.Set<go.Node> = new go.Set<go.Node>();
+
+    const it: go.Iterator<go.Node | go.Part | go.Link> = coll.iterator;
     while (it.next()) {
-      const node = it.value;
-      if (!(node instanceof go.Node) || !node.data) continue;
-      if (!node.isLayoutPositioned || !node.isVisible()) continue;
-      if (nonmemberonly && node.containingGroup !== null) continue;
-      // if it's an unmarried Node, or if it's a Link Label Node, create a LayoutVertex for it
+      const node: go.Node | go.Part | go.Link = it.value;
+      if (!(node instanceof go.Node) || !node.data) {
+        continue;
+      }
+      if (!node.isLayoutPositioned || !node.isVisible()) { 
+        continue; 
+      }
+      if (nonMemberOnly && node.containingGroup !== null) { 
+        continue; 
+      }
+
+      // если это одиночный узел или узел метки ссылки, создаем для него LayoutVertex
       if (node.isLinkLabel) {
-        // get marriage Link
-        const link = node.labeledLink;
+        // получение ссылки на "брак"
+        const link: go.Link = <go.Link>node.labeledLink;
         if (link.category === "Marriage") {
-          const spouseA = link.fromNode;
-          const spouseB = link.toNode;
-          // create vertex representing both husband and wife
-          const vertex = net.addNode(node);
-          // now define the vertex size to be big enough to hold both spouses
-          if (horiz) {
+          const spouseA: go.Node = <go.Node>link.fromNode;
+          const spouseB: go.Node = <go.Node>link.toNode;
+          // создание вершины, представляющей мужа и жену
+          const vertex: go.LayoutVertex = network.addNode(node);
+          // определение размера вершины, чтобы она мог вместить обоих супругов
+          if (horizontally) {
             vertex.height = spouseA.actualBounds.height + this.spouseSpacing + spouseB.actualBounds.height;
             vertex.width = Math.max(spouseA.actualBounds.width, spouseB.actualBounds.width);
             vertex.focus = new go.Point(vertex.width / 2, spouseA.actualBounds.height + this.spouseSpacing / 2);
@@ -56,43 +67,57 @@ export class GenogramLayout extends go.LayeredDigraphLayout {
           }
         }
       } else {
-        // don't add a vertex for any married person!
-        // instead, code above adds label node for marriage link
-        // assume a marriage Link has a label Node
-        let marriages = 0;
-        node.linksConnected.each(l => {
-          if (l.category === "Marriage") marriages++;
+        // не добавляйте вершину для женатых людей!
+        // вместо этого код выше добавляет узел метки для ссылки на "брак"
+        // предположим, что брачная ссылка имеет метку Node
+        let marriages: number = 0;
+        node.linksConnected.each((link: go.Link) => {
+          if (link.category === "Marriage") {
+            marriages++;
+          } 
         });
+        
         if (marriages === 0) {
-          net.addNode(node);
+          network.addNode(node);
         } else if (marriages > 1) {
           multiSpousePeople.add(node);
         }
       }
     }
-    // now do all Links
+    // создание всех ссылок
     it.reset();
     while (it.next()) {
-      const link = it.value;
-      if (!(link instanceof go.Link)) continue;
-      if (!link.isLayoutPositioned || !link.isVisible()) continue;
-      if (nonmemberonly && link.containingGroup !== null) continue;
-      // if it's a parent-child link, add a LayoutEdge for it
+      const link: go.Node | go.Part | go.Link = it.value;
+      if (!(link instanceof go.Link)) { 
+        continue; 
+      }
+
+      if (!link.isLayoutPositioned || !link.isVisible()) { 
+        continue; 
+      }
+
+      if (nonMemberOnly && link.containingGroup !== null) { 
+        continue; 
+      }
+
+      // если это родительско-дочерняя ссылка, добавление для нее LayoutEdge
       if (link.category === "" && link.data) {
-        const parent = net.findVertex(link.fromNode);  // should be a label node
-        const child = net.findVertex(link.toNode);
-        if (child !== null) {  // an unmarried child
-          net.linkVertexes(parent, child, link);
-        } else {  // a married child
-          link.toNode.linksConnected.each(l => {
-            if (l.category !== "Marriage" || !l.data) return;  // if it has no label node, it's a parent-child link
-            // found the Marriage Link, now get its label Node
-            const mlab = l.labelNodes.first();
-            // parent-child link should connect with the label node,
-            // so the LayoutEdge should connect with the LayoutVertex representing the label node
-            const mlabvert = net.findVertex(mlab);
-            if (mlabvert !== null) {
-              net.linkVertexes(parent, mlabvert, link);
+        const parent: go.LayoutVertex = <go.LayoutVertex>network.findVertex(<go.Node>link.fromNode); // должен быть узлом
+        const child: go.LayoutVertex | null = network.findVertex(<go.Node>link.toNode);
+        if (child !== null) { // неженатый ребенок
+          network.linkVertexes(parent, child, link);
+        } else { // женатый ребенок
+          (link.toNode as go.Node).linksConnected.each((connectedLink: go.Link) => {
+            if (connectedLink.category !== "Marriage" || !connectedLink.data) { 
+              return;  // если у него нет узла метки, это родительско-дочерняя ссылка
+            } 
+            // после нахождения ссылки на "брак", получение ее метки Node
+            const marrigeLabel: go.Node = <go.Node>connectedLink.labelNodes.first();
+            // родительско-дочерняя связь должна соединяться с узлом метки,
+            // поэтому LayoutEdge должен соединиться с LayoutVertex, представляющим узел метки
+            const marrigeLabelVertext: go.LayoutVertex | null = network.findVertex(marrigeLabel);
+            if (marrigeLabelVertext !== null) {
+              network.linkVertexes(parent, marrigeLabelVertext, link);
             }
           });
         }
@@ -100,158 +125,179 @@ export class GenogramLayout extends go.LayeredDigraphLayout {
     }
 
     while (multiSpousePeople.count > 0) {
-      // find all collections of people that are indirectly married to each other
-      const node = multiSpousePeople.first();
-      const cohort = new go.Set();
+      // поиск коллекции людей, состоящих в "непрямом" браке друг с другом
+      const node: go.Node = <go.Node>multiSpousePeople.first();
+      const cohort: go.Set<go.Node> = new go.Set<go.Node>();
       this.extendCohort(cohort, node);
-      // then encourage them all to be the same generation by connecting them all with a common vertex
-      const dummyvert = net.createVertex();
-      net.addVertex(dummyvert);
-      const marriages = new go.Set();
-      cohort.each(n => {
-        n.linksConnected.each(l => {
-          marriages.add(l);
+      // соедение их всех общей вершиной
+      const dummyVertex: go.LayoutVertex = network.createVertex();
+      network.addVertex(dummyVertex);
+      const marriages: go.Set<go.Link> = new go.Set<go.Link>();
+      cohort.each((cohortNode: go.Node) => {
+        cohortNode.linksConnected.each((connectedLink: go.Link) => {
+          marriages.add(connectedLink);
         })
       });
-      marriages.each(link => {
-        // find the vertex for the marriage link (i.e. for the label node)
-        const mlab = link.labelNodes.first()
-        const v = net.findVertex(mlab);
-        if (v !== null) {
-          net.linkVertexes(dummyvert, v, null);
+      marriages.each((link: go.Link) => {
+        // находим вершину для ссылки на "брак" (т.е. для узла метки)
+        const mariageLabel: go.Node = <go.Node>link.labelNodes.first()
+        const vertex: go.LayoutVertex | null = network.findVertex(mariageLabel);
+        if (vertex !== null) {
+          network.linkVertexes(dummyVertex, vertex, null);
         }
       });
-      // done with these people, now see if there are any other multiple-married people
+
       multiSpousePeople.removeAll(cohort);
     }
   }
 
-  // collect all of the people indirectly married with a person
-  extendCohort(coll, node) {
-    if (coll.has(node)) return;
-    coll.add(node);
-    node.linksConnected.each(l => {
-      if (l.category === "Marriage") {  // if it's a marriage link, continue with both spouses
-        this.extendCohort(coll, l.fromNode);
-        this.extendCohort(coll, l.toNode);
+  // сбор всех людей, состоящих в "непрямом" браке с человеком
+  extendCohort(collection: go.Set<go.Node>, node: go.Node): void {
+    if (collection.has(node)) { 
+      return; 
+    }
+
+    collection.add(node);
+    node.linksConnected.each((connectedLink: go.Link) => {
+      if (connectedLink.category === "Marriage") { // если это ссылка на "брак"
+        this.extendCohort(collection, <go.Node>connectedLink.fromNode);
+        this.extendCohort(collection, <go.Node>connectedLink.toNode);
       }
     });
   }
 
-  assignLayers() {
+  assignLayers(): void {
     super.assignLayers();
-    const horiz = this.direction == 0.0 || this.direction == 180.0;
-    // for every vertex, record the maximum vertex width or height for the vertex's layer
-    const maxsizes = [];
-    this.network.vertexes.each(v => {
-      const lay = v.layer;
-      let max = maxsizes[lay];
-      if (max === undefined) max = 0;
-      const sz = (horiz ? v.width : v.height);
-      if (sz > max) maxsizes[lay] = sz;
-    });
-    // now make sure every vertex has the maximum width or height according to which layer it is in,
-    // and aligned on the left (if horizontal) or the top (if vertical)
-    this.network.vertexes.each(v => {
-      const lay = v.layer;
-      const max = maxsizes[lay];
-      if (horiz) {
-        v.focus = new go.Point(0, v.height / 2);
-        v.width = max;
-      } else {
-        v.focus = new go.Point(v.width / 2, 0);
-        v.height = max;
+    const horizontally: boolean = this.direction == 0.0 || this.direction == 180.0;
+    // для каждой вершины нужно запомнить максимальную ширину или высоту ее слоя
+    const maxSizes: number[] = [];
+    (this.network as go.LayoutNetwork).vertexes.each((networkVertex: go.LayoutVertex) => {
+      const vertexLayer: number = (networkVertex as go.LayoutVertex & { layer: number }).layer;
+      let max: number = maxSizes[vertexLayer];
+      if (max === undefined) { 
+        max = 0;
+      }
+      const size = horizontally ? networkVertex.width : networkVertex.height;
+      if (size > max) { 
+        maxSizes[vertexLayer] = size; 
       }
     });
-    // from now on, the LayeredDigraphLayout will think that the Node is bigger than it really is
-    // (other than the ones that are the widest or tallest in their respective layer).
+    // обощение ширины и высоты каждой вершины вне зависимости от того, на каком слое она находится
+    (this.network as go.LayoutNetwork).vertexes.each((networkVertex: go.LayoutVertex) => {
+      const vertexLayer: number = (networkVertex as go.LayoutVertex & { layer: number }).layer;
+      const maxSize: number = maxSizes[vertexLayer];
+      if (horizontally) {
+        networkVertex.focus = new go.Point(0, networkVertex.height / 2);
+        networkVertex.width = maxSize;
+      } else {
+        networkVertex.focus = new go.Point(networkVertex.width / 2, 0);
+        networkVertex.height = maxSize;
+      }
+    });
+    // с этого момента LayeredDigraphLayout будет думать, что Node больше, чем он есть на самом деле
   }
 
-  initializeIndices() {
+  initializeIndices(): void {
     super.initializeIndices();
-    const vertical = this.direction === 90 || this.direction === 270;
-    this.network.edges.each(e => {
-      if (e.fromVertex.node && e.fromVertex.node.isLinkLabel) {
-        e.portFromPos = vertical ? e.fromVertex.focusX : e.fromVertex.focusY;
+    const vertical: boolean = this.direction === 90 || this.direction === 270;
+
+    (this.network as go.LayoutNetwork).edges.each((networkEdge: go.LayoutEdge) => {
+      const fromVertex: go.LayoutVertex = <go.LayoutVertex>networkEdge.fromVertex;
+      const toVertex: go.LayoutVertex = <go.LayoutVertex>networkEdge.toVertex;
+
+      if (fromVertex.node && fromVertex.node.isLinkLabel) {
+        (networkEdge as go.LayoutEdge & { portFromPos: number }).portFromPos = vertical ? fromVertex.focusX : fromVertex.focusY;
       }
-      if (e.toVertex.node && e.toVertex.node.isLinkLabel) {
-        e.portToPos = vertical ? e.toVertex.focusX : e.toVertex.focusY;
+      if (toVertex.node && toVertex.node.isLinkLabel) {
+        (networkEdge as go.LayoutEdge & { portToPos: number }).portToPos = vertical ? toVertex.focusX : toVertex.focusY;
       }
     })
   }
 
-  commitNodes() {
+  commitNodes(): void {
     super.commitNodes();
-    // position regular nodes
-    this.network.vertexes.each(v => {
-      if (v.node !== null && !v.node.isLinkLabel) {
-        v.node.position = new go.Point(v.x, v.y);
+    // позиционирование обычных узлов
+    (this.network as go.LayoutNetwork).vertexes.each((networkVertex: go.LayoutVertex) => {
+      if (networkVertex.node !== null && !networkVertex.node.isLinkLabel) {
+        networkVertex.node.position = new go.Point(networkVertex.x, networkVertex.y);
       }
     });
 
-    const horiz = this.direction == 0.0 || this.direction == 180.0;
-    // position the spouses of each marriage vertex
-    this.network.vertexes.each(v => {
-      if (v.node === null) return;
-      if (!v.node.isLinkLabel) return;
-      const labnode = v.node;
-      const lablink = labnode.labeledLink;
-      // In case the spouses are not actually moved, we need to have the marriage link
-      // position the label node, because LayoutVertex.commit() was called above on these vertexes.
-      // Alternatively we could override LayoutVetex.commit to be a no-op for label node vertexes.
-      lablink.invalidateRoute();
-      let spouseA = lablink.fromNode;
-      let spouseB = lablink.toNode;
+    const horizontally = this.direction == 0.0 || this.direction == 180.0;
+    // позиционирование супругов
+    (this.network as go.LayoutNetwork).vertexes.each((networkVertex: go.LayoutVertex) => {
+      if (networkVertex.node === null) { 
+        return;
+      }
+
+      if (!networkVertex.node.isLinkLabel) { 
+        return; 
+      }
+
+      const labelNode: go.Node = networkVertex.node;
+      const labelLink: go.Link = <go.Link>labelNode.labeledLink;
+      // в случае, если супруги на самом деле не двигаются, нам нужна ссылка на "брак"
+      // позиционирование узла метки, потому что LayoutVertex.commit() был вызван выше для этих вершин.
+      labelLink.invalidateRoute();
+      let spouseA: go.Node = <go.Node>labelLink.fromNode;
+      let spouseB: go.Node = <go.Node>labelLink.toNode;
       if (spouseA.opacity > 0 && spouseB.opacity > 0) {
-        // prefer fathers on the left, mothers on the right
-        if (spouseA.category === "F") {  // sex is female
+        // предпочтение к расположению отцов слева, матерей справа
+        if (spouseA.category === "F") {  // пол женский
           const temp = spouseA;
           spouseA = spouseB;
           spouseB = temp;
         }
-        // see if the parents are on the desired sides, to avoid a link crossing
+        // проверка, находятся ли родители на нужных сторонах, чтобы избежать пересечения ссылок
         const aParentsNode = this.findParentsMarriageLabelNode(spouseA);
         const bParentsNode = this.findParentsMarriageLabelNode(spouseB);
         if (aParentsNode !== null && bParentsNode !== null &&
-            (horiz
+            (horizontally
               ? aParentsNode.position.x > bParentsNode.position.x
               : aParentsNode.position.y > bParentsNode.position.y)) {
-          // swap the spouses
+          // меняет суругов
           const temp = spouseA;
           spouseA = spouseB;
           spouseB = temp;
         }
-        spouseA.moveTo(v.x, v.y);
-        if (horiz) {
-          spouseB.moveTo(v.x, v.y + spouseA.actualBounds.height + this.spouseSpacing);
+        spouseA.moveTo(networkVertex.x, networkVertex.y);
+        if (horizontally) {
+          spouseB.moveTo(networkVertex.x, networkVertex.y + spouseA.actualBounds.height + this.spouseSpacing);
         } else {
-          spouseB.moveTo(v.x + spouseA.actualBounds.width + this.spouseSpacing, v.y);
+          spouseB.moveTo(networkVertex.x + spouseA.actualBounds.width + this.spouseSpacing, networkVertex.y);
         }
       } else if (spouseA.opacity === 0) {
-        const pos = horiz
-          ? new go.Point(v.x, v.centerY - spouseB.actualBounds.height / 2)
-          : new go.Point(v.centerX - spouseB.actualBounds.width / 2, v.y);
+        const pos = horizontally
+          ? new go.Point(networkVertex.x, networkVertex.centerY - spouseB.actualBounds.height / 2)
+          : new go.Point(networkVertex.centerX - spouseB.actualBounds.width / 2, networkVertex.y);
         spouseB.move(pos);
-        if (horiz) pos.y++; else pos.x++;
+        if (horizontally) pos.y++; else pos.x++;
         spouseA.move(pos);
       } else if (spouseB.opacity === 0) {
-        const pos = horiz
-          ? new go.Point(v.x, v.centerY - spouseA.actualBounds.height / 2)
-          : new go.Point(v.centerX - spouseA.actualBounds.width / 2, v.y);
+        const pos = horizontally
+          ? new go.Point(networkVertex.x, networkVertex.centerY - spouseA.actualBounds.height / 2)
+          : new go.Point(networkVertex.centerX - spouseA.actualBounds.width / 2, networkVertex.y);
         spouseA.move(pos);
-        if (horiz) pos.y++; else pos.x++;
+        if (horizontally) { 
+          pos.y++; 
+        } else { 
+          pos.x++; 
+        }
+
         spouseB.move(pos);
       }
-      lablink.ensureBounds();
+      labelLink.ensureBounds();
     });
   }
 
-  findParentsMarriageLabelNode(node) {
-    const it = node.findNodesInto();
+  findParentsMarriageLabelNode(node: go.Node): go.Node | null {
+    const it: go.Iterator<go.Node> = node.findNodesInto();
     while (it.next()) {
-      const n = it.value;
-      if (n.isLinkLabel) return n;
+      const childNode: go.Node = it.value;
+      if (childNode.isLinkLabel) { 
+        return childNode; 
+      }
     }
     return null;
   }
-} // end GenogramLayout class
+}

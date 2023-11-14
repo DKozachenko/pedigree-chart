@@ -9,8 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@balkangraph/familytree.js": "^1.9.6",
-    "@balkangraph/orgchart.js": "^8.13.10",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fontsource/roboto": "^5.0.8",
@@ -19,7 +17,6 @@
     "@mui/material": "^5.14.17",
     "@reduxjs/toolkit": "^1.9.7",
     "gojs": "^2.3.11",
-    "gojs-react": "^1.1.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",

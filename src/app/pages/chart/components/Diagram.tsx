@@ -1,4 +1,3 @@
-import { ReactDiagram } from 'gojs-react';
 import * as go from 'gojs';
 import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from 'react';
 import { GenogramLayout } from '../models/classes';
