@@ -1,1 +1,0 @@
-export const RELATIVE_NODE_TEXT_COLOR = '#2e2d2d';

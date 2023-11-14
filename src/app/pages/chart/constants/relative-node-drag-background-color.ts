@@ -1,1 +1,0 @@
-export const RELATIVE_NODE_DRAG_BACKGROUND_COLOR = "#c4c2c2";

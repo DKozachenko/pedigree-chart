@@ -1,419 +1,384 @@
 import { ReactDiagram } from 'gojs-react';
 import * as go from 'gojs';
 import { Dispatch, MutableRefObject, SetStateAction, useEffect, useRef, useState } from 'react';
-import { FONT_FAMILY, NEW_RELATIVE, RELATIVE_NODE_BACKGROUND_COLOR, RELATIVE_NODE_BORDER_COLOR, RELATIVE_NODE_DRAG_BACKGROUND_COLOR, RELATIVE_NODE_TEXT_COLOR } from '../constants';
-import { insertNewRelative } from '../utils';
+import { GenogramLayout } from '../models/classes';
 
 export function Diagram() {
-  const diagramRef: MutableRefObject<ReactDiagram | null> = useRef<ReactDiagram | null>(null);
-  const [nodeDataArray, setNodeDataArray]: [go.ObjectData[], Dispatch<SetStateAction<go.ObjectData[]>>] = useState<go.ObjectData[]>([]);
-  const [linkDataArray, setLinkDataArray]: [go.ObjectData[], Dispatch<SetStateAction<go.ObjectData[]>>] = useState<go.ObjectData[]>([]);
-  const [modelData, setModelData]: [go.ObjectData, Dispatch<SetStateAction<go.ObjectData>>] = useState<go.ObjectData>({});
-  const [skipsDiagramUpdate, setSkipsDiagramUpdate]: [boolean, Dispatch<SetStateAction<boolean>>] = useState<boolean>(false); 
-  const [selectedKey, setSelectedKey]: [null, Dispatch<SetStateAction<null>>] = useState(null); 
+  function init() {
 
-  useEffect(() => {
-    const currentRef: ReactDiagram | null = diagramRef.current;
-    if (!currentRef) return;
+    // Since 2.2 you can also author concise templates with method chaining instead of GraphObject.make
+    // For details, see https://gojs.net/latest/intro/buildingObjects.html
+    const $ = go.GraphObject.make;
 
-    console.warn(123);
-    setNodeDataArray([
-      {"key":1, "name":"Stella Payne Diaz", "title":"CEO", "pic":"vite.svg"},
-      {"key":2, "name":"Luke Warm", "title":"VP Marketing/Sales", "pic":"vite.svg", "parent":1},
-      {"key":3, "name":"Meg Meehan Hoffa", "title":"Sales", "pic":"vite.svg", "parent":2},
-      {"key":4, "name":"Peggy Flaming", "title":"VP Engineering", "pic":"vite.svg", "parent":1},
-      {"key":5, "name":"Saul Wellingood", "title":"Manufacturing", "pic":"vite.svg", "parent":4},
-      {"key":6, "name":"Al Ligori", "title":"Marketing", "pic":"vite.svg", "parent":2},
-      {"key":7, "name":"Dot Stubadd", "title":"Sales Rep", "pic":"vite.svg", "parent":3},
-      {"key":8, "name":"Les Ismore", "title":"Project Mgr", "pic":"vite.svg", "parent":5},
-      {"key":9, "name":"April Lynn Parris", "title":"Events Mgr", "pic":"vite.svg", "parent":6},
-      {"key":10, "name":"Xavier Breath", "title":"Engineering", "pic":"vite.svg", "parent":4},
-      {"key":11, "name":"Anita Hammer", "title":"Process", "pic":"vite.svg", "parent":5},
-      {"key":12, "name":"Billy Aiken", "title":"Software", "pic":"vite.svg", "parent":10},
-      {"key":13, "name":"Stan Wellback", "title":"Testing", "pic":"vite.svg", "parent":10},
-      {"key":14, "name":"Marge Innovera", "title":"Hardware", "pic":"vite.svg", "parent":10},
-      {"key":15, "name":"Evan Elpus", "title":"Quality", "pic":"vite.svg", "parent":5},
-      {"key":16, "name":"Lotta B. Essen", "title":"Sales Rep", "pic":"vite.svg", "parent":3}
-    ]);
+    const myDiagram =
+      new go.Diagram("myDiagramDiv",
+        {
+          "animationManager.isEnabled": false,
+          initialAutoScale: go.Diagram.Uniform,
+          "undoManager.isEnabled": true,
+          maxSelectionCount: 1,
+          // when a node is selected, draw a big yellow circle behind it
+          nodeSelectionAdornmentTemplate:
+            $(go.Adornment, "Auto",
+              { layerName: "Grid" },  // the predefined layer that is behind everything else
+              $(go.Shape, "Circle", { fill: "#c1cee3", stroke: null }),
+              $(go.Placeholder, { margin: 2 })
+            ),
+          layout:  // use a custom layout, defined above
+            $(GenogramLayout, { direction: 90, layerSpacing: 30, columnSpacing: 10 })
+        });
 
-    // read in the JSON-format data from the "mySavedModel" element
-    load();
-  }, []);
-
-  // TODO: нужна ли эта функция, тк у нас не про работу
-  const mayWorkFor = (node1: go.Node | null, node2: go.Node | null) => {
-    if (!node1 || !node2) {
-      return false;     
-    }
-    if (node1 === node2) return false;
-    
-    if (node2.isInTreeOf(node1)) return false;
-    return true;
-  }
-
-  const relativeNodeTextStyle = (size: number) => {
-    return { 
-      font: `${size}pt ${FONT_FAMILY},sans-serif`, 
-      stroke: RELATIVE_NODE_TEXT_COLOR 
-    };
-  }
-
-  const relativeHover: (opacity: 0 | 1) => (event: go.InputEvent, node: go.GraphObject) => void = (opacity: 0 | 1) => {
-    return (event: go.InputEvent, node: go.GraphObject) => {
-      const addEmployeeButton: go.GraphObject | null = (node as go.Part).findObject("BUTTON");
-      const expandTreeButton: go.GraphObject | null = (node as go.Part).findObject("BUTTONX");
-      if (!addEmployeeButton || !expandTreeButton) {
-        return;
+    // determine the color for each attribute shape
+    function attrFill(a) {
+      switch (a) {
+        case "A": return "#00af54"; // green
+        case "B": return "#f27935"; // orange
+        case "C": return "#d4071c"; // red
+        case "D": return "#70bdc2"; // cyan
+        case "E": return "#fcf384"; // gold
+        case "F": return "#e69aaf"; // pink
+        case "G": return "#08488f"; // blue
+        case "H": return "#866310"; // brown
+        case "I": return "#9270c2"; // purple
+        case "J": return "#a3cf62"; // chartreuse
+        case "K": return "#91a4c2"; // lightgray bluish
+        case "L": return "#af70c2"; // magenta
+        case "S": return "#d4071c"; // red
+        default: return "transparent";
       }
-      addEmployeeButton.opacity = expandTreeButton.opacity = opacity;
-    }
-  }
-
-  const relativeDragEnter: (event: go.InputEvent, node: go.GraphObject) => void = (event: go.InputEvent, node: go.GraphObject) => {
-    const diagram: go.Diagram | null = node.diagram;
-    if (!diagram) {
-      return;
     }
 
-    const selectedNode: go.Part | null = diagram.selection.first();
-    if (!mayWorkFor(selectedNode as go.Node, node as go.Node)) {
-      return;
+    // determine the geometry for each attribute shape in a male;
+    // except for the slash these are all squares at each of the four corners of the overall square
+    const tlsq = go.Geometry.parse("F M1 1 l19 0 0 19 -19 0z");
+    const trsq = go.Geometry.parse("F M20 1 l19 0 0 19 -19 0z");
+    const brsq = go.Geometry.parse("F M20 20 l19 0 0 19 -19 0z");
+    const blsq = go.Geometry.parse("F M1 20 l19 0 0 19 -19 0z");
+    const slash = go.Geometry.parse("F M38 0 L40 0 40 2 2 40 0 40 0 38z");
+    function maleGeometry(a) {
+      switch (a) {
+        case "A": return tlsq;
+        case "B": return tlsq;
+        case "C": return tlsq;
+        case "D": return trsq;
+        case "E": return trsq;
+        case "F": return trsq;
+        case "G": return brsq;
+        case "H": return brsq;
+        case "I": return brsq;
+        case "J": return blsq;
+        case "K": return blsq;
+        case "L": return blsq;
+        case "S": return slash;
+        default: return tlsq;
+      }
     }
 
-    const shape: go.GraphObject | null = (node as go.Part).findObject("SHAPE");
-    if (!shape) {
-      return;
+    // determine the geometry for each attribute shape in a female;
+    // except for the slash these are all pie shapes at each of the four quadrants of the overall circle
+    const tlarc = go.Geometry.parse("F M20 20 B 180 90 20 20 19 19 z");
+    const trarc = go.Geometry.parse("F M20 20 B 270 90 20 20 19 19 z");
+    const brarc = go.Geometry.parse("F M20 20 B 0 90 20 20 19 19 z");
+    const blarc = go.Geometry.parse("F M20 20 B 90 90 20 20 19 19 z");
+    function femaleGeometry(a) {
+      switch (a) {
+        case "A": return tlarc;
+        case "B": return tlarc;
+        case "C": return tlarc;
+        case "D": return trarc;
+        case "E": return trarc;
+        case "F": return trarc;
+        case "G": return brarc;
+        case "H": return brarc;
+        case "I": return brarc;
+        case "J": return blarc;
+        case "K": return blarc;
+        case "L": return blarc;
+        case "S": return slash;
+        default: return tlarc;
+      }
     }
-    
-    (shape as go.Shape).fill = RELATIVE_NODE_DRAG_BACKGROUND_COLOR;
-  }
 
-  const relativeDragLeave: (event: go.InputEvent, node: go.GraphObject) => void = (event: go.InputEvent, node: go.GraphObject) => {
-    const shape: go.GraphObject | null = (node as go.Part).findObject("SHAPE");
-    if (!shape) {
-      return;
-    }
-    
-    (shape as go.Shape).fill = RELATIVE_NODE_BACKGROUND_COLOR;
-  }
-  const relativeDrop: (event: go.InputEvent, node: go.GraphObject) => void = (event: go.InputEvent, node: go.GraphObject) => {
-    const diagram: go.Diagram | null = node.diagram;
-    if (!diagram) {
-      return;
-    }
 
-    const selectedNode: go.Part | null = diagram.selection.first();
-    if (!mayWorkFor(selectedNode as go.Node, node as go.Node)) {
-      return;
-    }
-    
-    const link: go.Link | null = (selectedNode as go.Node).findTreeParentLink();
-    if (link === null) {
-      diagram.toolManager.linkingTool.insertLink(node as go.Node, (node as go.Node).port, selectedNode as go.Node, (selectedNode as go.Node).port);
-    } else { 
-      link.fromNode = node as go.Node;
-    }
-  }
-
-  const getNodeTemplateSettings: () => Partial<go.Node> = () => {
-    return {
-      selectionObjectName: "BODY",
-      mouseEnter: relativeHover(1),
-      mouseLeave: relativeHover(0),
-      mouseDragEnter: relativeDragEnter,
-      mouseDragLeave: relativeDragLeave,
-      mouseDrop: relativeDrop
-    };
-  }
-
-  const getDiagramSettings: () => Partial<go.Diagram> = () => {
-    const $ = go.GraphObject.make;
-    
-    return {
-      allowCopy: false,
-      allowDelete: false,
-      // initialAutoScale: go.Diagram.Uniform,
-      maxSelectionCount: 1,
-      validCycle: go.Diagram.CycleDestinationTree,
-      model: $(go.GraphLinksModel, {
-        linkKeyProperty: 'key',
-      }),
-      // Двойной клик по заднему фону добавляет новые узел
-      "clickCreatingTool.archetypeNodeData": NEW_RELATIVE,
-      "clickCreatingTool.insertPart": insertNewRelative,
-      layout: $(go.TreeLayout, {
-        treeStyle: go.TreeLayout.StyleLastParents,
-        arrangement: go.TreeLayout.ArrangementHorizontal,
-        angle: 90,
-        layerSpacing: 35,
-        alternateAngle: 90,
-        alternateLayerSpacing: 35,
-        alternateAlignment: go.TreeLayout.AlignmentBus,
-        alternateNodeSpacing: 20,
-      }),
-      "undoManager.isEnabled": true,
-      nodeTemplate: $(go.Node, "Spot", 
-        getNodeTemplateSettings(),
-        new go.Binding("text", "name"),
-        $(go.Panel, "Auto", { 
-          name: "BODY" 
-        },
-        $(go.Shape, "RoundedRectangle", { 
-          name: "SHAPE", 
-          fill: RELATIVE_NODE_BACKGROUND_COLOR, 
-          stroke: RELATIVE_NODE_BORDER_COLOR,
-          // Скругление границы
-          parameter1: 2,
-          strokeWidth: 3, 
-          portId: ""
-        }),
-        $(go.Panel, "Horizontal",
-          $(go.Picture, {
-            name: "Picture",
-            desiredSize: new go.Size(70, 70),
-            margin: 1.5,
-            // Дефолтное изображение при добавлении узла
-            source: "https://placehold.co/70"
-          },
-          new go.Binding("source", "pic")),
-          $(go.Panel, "Table", {
-            minSize: new go.Size(130, NaN),
-            maxSize: new go.Size(150, NaN),
-            margin: new go.Margin(6, 10, 6, 10),
-            defaultAlignment: go.Spot.Left
-          },
-          $(go.RowColumnDefinition, { 
-            column: 2,
-            // TODO: мб нужно еще кол-во строк
-            width: 4
-          }),
-          $(go.TextBlock, relativeNodeTextStyle(12), {
-            name: "NAMETB",
-            row: 0, 
-            column: 0, 
-            columnSpan: 5,
-            editable: true, 
-            isMultiline: false,
-            minSize: new go.Size(50, 16)
-          },
-          new go.Binding("text", "name").makeTwoWay()),
-          $(go.TextBlock, "Title: ", relativeNodeTextStyle(9), { 
-            row: 1, 
-            column: 0 
-          }),
-          $(go.TextBlock, relativeNodeTextStyle(9), {
-            row: 1, 
-            column: 1, 
-            columnSpan: 4,
-            editable: true, 
-            isMultiline: false,
-            minSize: new go.Size(50, 14),
-            margin: new go.Margin(0, 0, 0, 2)
-          },
-          new go.Binding("text", "title").makeTwoWay()),
-          $(go.TextBlock, relativeNodeTextStyle(9), { 
-            row: 2, 
-            column: 0 
-          },
-          new go.Binding("text", "key", (id: number) => "ID: " + id)),
-          $(go.TextBlock, relativeNodeTextStyle(9), {
-            row: 3, 
-            column: 0, 
-            columnSpan: 5,
-            wrap: go.TextBlock.WrapFit,
-            editable: true,
-            minSize: new go.Size(100, 14)
-          },
-          new go.Binding("text", "comments").makeTwoWay())
-        ))),
-        $("Button",
-          $(go.Shape, "PlusLine", { 
-            width: 10, 
-            height: 10 
-          }), {
-            name: "BUTTON", 
-            alignment: go.Spot.Right, 
-            // Изначально не должна быть видна
-            opacity: 0,
-            click: addEmployee
-          },
-          // Кнопка видна либо при выборе узла, либо при наведении курсора мыши
-          new go.Binding("opacity", "isSelected", op => op ? 1 : 0).ofObject()
+    // two different node templates, one for each sex,
+    // named by the category value in the node data object
+    myDiagram.nodeTemplateMap.add("M",  // male
+      $(go.Node, "Vertical",
+        { locationSpot: go.Spot.Center, locationObjectName: "ICON",
+          selectionObjectName: "ICON" },
+        new go.Binding("opacity", "hide", h => h ? 0 : 1),
+        new go.Binding("pickable", "hide", h => !h),
+        $(go.Panel,
+          { name: "ICON" },
+          $(go.Shape, "Square",
+            { width: 40, height: 40, strokeWidth: 2, fill: "white", stroke: "#919191", portId: "" }),
+          $(go.Panel,
+            { // for each attribute show a Shape at a particular place in the overall square
+              itemTemplate:
+                $(go.Panel,
+                  $(go.Shape,
+                    { stroke: null, strokeWidth: 0 },
+                    new go.Binding("fill", "", attrFill),
+                    new go.Binding("geometry", "", maleGeometry))
+                ),
+              margin: 1
+            },
+            new go.Binding("itemArray", "a")
+          )
         ),
-        new go.Binding("isTreeExpanded").makeTwoWay(),
-        $("TreeExpanderButton", {
-          name: "BUTTONX", 
-          alignment: go.Spot.Bottom,
-          // Изначально не должна быть видна 
-          opacity: 0,
-          "_treeExpandedFigure": "TriangleUp",
-          "_treeCollapsedFigure": "TriangleDown"
-        },
-        // Кнопка видна либо при выборе узла, либо при наведении курсора мыши
-        new go.Binding("opacity", "isSelected", op => op ? 1 : 0).ofObject()
-        )
-      )
-    }
-  }
+        $(go.TextBlock,
+          { textAlign: "center", maxSize: new go.Size(80, NaN), background: "rgba(255,255,255,0.5)" },
+          new go.Binding("text", "n"))
+      ));
 
-  const addEmployee: (event: go.InputEvent, node: go.GraphObject) => void = (event: go.InputEvent, node: go.GraphObject) => {
-    const button: go.Part | null = (node as go.Node).part;
-    if (!button) {
-      return;
-    }
-    const currentEmployee: object & { key: number } = button.data;
-    const diagram: go.Diagram | null = button.diagram;
-    if (!diagram) {
-      return;
-    }
-
-    diagram.startTransaction("add employee");
-    const newEmployee: object = { name: "(new person)", title: "(title)", comments: "", parent: currentEmployee.key };
-    diagram.model.addNodeData(newEmployee);
-    const newEmployeeNode: go.Node | null = diagram.findNodeForData(newEmployee);
-    if (!newEmployeeNode) {
-      return;
-    }
-    newEmployeeNode.location = button.location;
-    diagram.commitTransaction("add employee");
-    diagram.commandHandler.scrollToPart(newEmployeeNode);
-  }
-
-  const initDiagram: () => go.Diagram = () => {
-    const $ = go.GraphObject.make;
-
-    const diagram = $(go.Diagram, getDiagramSettings());
-
-    diagram.nodeTemplate.contextMenu =
-      $("ContextMenu",
-        $("ContextMenuButton",
-          $(go.TextBlock, "Add Employee"),
-          {
-            click: (e, button) => addEmployee((button.part as any).adornedPart)
-          }
+    myDiagram.nodeTemplateMap.add("F",  // female
+      $(go.Node, "Vertical",
+        { locationSpot: go.Spot.Center, locationObjectName: "ICON",
+          selectionObjectName: "ICON" },
+        new go.Binding("opacity", "hide", h => h ? 0 : 1),
+        new go.Binding("pickable", "hide", h => !h),
+        $(go.Panel,
+          { name: "ICON" },
+          $(go.Shape, "Circle",
+            { width: 40, height: 40, strokeWidth: 2, fill: "white", stroke: "#a1a1a1", portId: "" }),
+          $(go.Panel,
+            { // for each attribute show a Shape at a particular place in the overall circle
+              itemTemplate:
+                $(go.Panel,
+                  $(go.Shape,
+                    { stroke: null, strokeWidth: 0 },
+                    new go.Binding("fill", "", attrFill),
+                    new go.Binding("geometry", "", femaleGeometry))
+                ),
+              margin: 1
+            },
+            new go.Binding("itemArray", "a")
+          )
         ),
-        $("ContextMenuButton",
-          $(go.TextBlock, "Vacate Position"),
-          {
-            click: (e, button) => {
-              const node = (button.part as any).adornedPart;
-              if (node !== null) {
-                const thisemp = node.data;
-                diagram.startTransaction("vacate");
-                // update the key, name, picture, and comments, but leave the title
-                diagram.model.setDataProperty(thisemp, "name", "(Vacant)");
-                diagram.model.setDataProperty(thisemp, "pic", "");
-                diagram.model.setDataProperty(thisemp, "comments", "");
-                diagram.commitTransaction("vacate");
-              }
-            }
-          }
-        ),
-        $("ContextMenuButton",
-          $(go.TextBlock, "Remove Role"),
-          {
-            click: (e, button) => {
-              // reparent the subtree to this node's boss, then remove the node
-              const node = (button.part as any).adornedPart;
-              if (node !== null) {
-                diagram.startTransaction("reparent remove");
-                const chl = node.findTreeChildrenNodes();
-                // iterate through the children and set their parent key to our selected node's parent key
-                while (chl.next()) {
-                  const emp = chl.value;
-                  (diagram.model as any).setParentKeyForNodeData(emp.data, node.findTreeParentNode().data.key);
-                }
-                // and now remove the selected node itself
-                diagram.model.removeNodeData(node.data);
-                diagram.commitTransaction("reparent remove");
-              }
-            }
-          }
-        ),
-        $("ContextMenuButton",
-          $(go.TextBlock, "Remove Department"),
-          {
-            click: (e, button) => {
-              // remove the whole subtree, including the node itself
-              const node = (button.part as any).adornedPart;
-              if (node !== null) {
-                diagram.startTransaction("remove dept");
-                diagram.removeParts(node.findTreeParts());
-                diagram.commitTransaction("remove dept");
-              }
-            }
-          }
-        )
+        $(go.TextBlock,
+          { textAlign: "center", maxSize: new go.Size(80, NaN), background: "rgba(255,255,255,0.5)" },
+          new go.Binding("text", "n"))
+      ));
+
+    // the representation of each label node -- nothing shows on a Marriage Link
+    myDiagram.nodeTemplateMap.add("LinkLabel",
+      $(go.Node,
+        { selectable: false, width: 1, height: 1, fromEndSegmentLength: 20 }));
+
+    myDiagram.linkTemplate =  // for parent-child relationships
+      $(go.Link,
+        { routing: go.Link.Orthogonal, corner: 10, curviness: 15, 
+          layerName: "Background", selectable: false },
+        $(go.Shape, { stroke: "gray", strokeWidth: 2 })
       );
 
-    // relinking depends on modelData
-    diagram.linkTemplate =
-      $(go.Link, go.Link.Orthogonal,
-        { layerName: "Background", corner: 5 },
-        $(go.Shape, { strokeWidth: 1.5, stroke: "red" }));  // the link shape
+    myDiagram.linkTemplateMap.add("Marriage",  // for marriage relationships
+      $(go.Link,
+        // AvoidsNodes routing might be better when people have multiple marriages
+        { routing: go.Link.AvoidsNodes, corner: 10,
+          fromSpot: go.Spot.LeftRightSides, toSpot: go.Spot.LeftRightSides,
+          selectable: false, isTreeLink: false, layerName: "Background" },
+        $(go.Shape, { strokeWidth: 2.5, stroke: "#5d8cc1" /* blue */ })
+      ));
 
-    return diagram;
+    // n: name, s: sex, m: mother, f: father, ux: wife, vir: husband, a: attributes/markers
+
+    setupDiagram(myDiagram, [
+      { key: 0, n: "Aaron", s: "M", m: -10, f: -11, ux: 1, a: ["C", "F", "K"] },
+      { key: 1, n: "Alice", s: "F", m: -12, f: -13, a: ["B", "H", "K"] },
+      { key: 2, n: "Bob", s: "M", m: 1, f: 0, ux: 3, a: ["C", "H", "L"] },
+      { key: 3, n: "Barbara", s: "F", a: ["C"] },
+      { key: 4, n: "Bill", s: "M", m: 1, f: 0, ux: 5, a: ["E", "H"] },
+      { key: 5, n: "Brooke", s: "F", a: ["B", "H", "L"] },
+      { key: 6, n: "Claire", s: "F", m: 1, f: 0, a: ["C"] },
+      { key: 7, n: "Carol", s: "F", m: 1, f: 0, a: ["C", "I"] },
+      { key: 8, n: "Chloe", s: "F", m: 1, f: 0, vir: 9, a: ["E"] },
+      { key: 9, n: "Chris", s: "M", a: ["B", "H"] },
+      { key: 10, n: "Ellie", s: "F", m: 3, f: 2, a: ["E", "G"] },
+      { key: 11, n: "Dan", s: "M", m: 3, f: 2, a: ["B", "J"] },
+      { key: 12, n: "Elizabeth", s: "F", vir: 13, a: ["J"] },
+      { key: 13, n: "David", s: "M", m: 5, f: 4, a: ["B", "H"] },
+      { key: 14, n: "Emma", s: "F", m: 5, f: 4, a: ["E", "G"] },
+      { key: 15, n: "Evan", s: "M", m: 8, f: 9, a: ["F", "H"] },
+      { key: 16, n: "Ethan", s: "M", m: 8, f: 9, a: ["D", "K"] },
+      { key: 17, n: "Eve", s: "F", vir: 16, a: ["B", "F", "L"] },
+      { key: 18, n: "Emily", s: "F", m: 8, f: 9 },
+      { key: 19, n: "Fred", s: "M", m: 17, f: 16, a: ["B"] },
+      { key: 20, n: "Faith", s: "F", m: 17, f: 16, a: ["L"] },
+      { key: 21, n: "Felicia", s: "F", m: 12, f: 13, a: ["H"] },
+      { key: 22, n: "Frank", s: "M", m: 12, f: 13, a: ["B", "H"] },
+
+      // "Aaron"'s ancestors
+      { key: -10, n: "Paternal Grandfather", s: "M", m: -33, f: -32, ux: -11, a: ["A", "S"] },
+      { key: -11, n: "Paternal Grandmother", s: "F", a: ["E", "S"] },
+      { key: -32, n: "Paternal Great", s: "M", ux: -33, a: ["F", "H", "S"] },
+      { key: -33, n: "Paternal Great", s: "F", a: ["S"] },
+      { key: -40, n: "Great Uncle", s: "M", m: -33, f: -32, a: ["F", "H", "S"] },
+      { key: -41, n: "Great Aunt", s: "F", m: -33, f: -32, a: ["B", "I", "S"] },
+      { key: -20, n: "Uncle", s: "M", m: -11, f: -10, a: ["A", "S"] },
+
+      // "Alice"'s ancestors
+      { key: -12, n: "Maternal Grandfather", s: "M", ux: -13, a: ["D", "L", "S"] },
+      { key: -13, n: "Maternal Grandmother", s: "F", m: -31, f: -30, a: ["H", "S"] },
+      { key: -21, n: "Aunt", s: "F", m: -13, f: -12, a: ["C", "I"] },
+      { key: -22, n: "Uncle", s: "M", ux: -21 },
+      { key: -23, n: "Cousin", s: "M", m: -21, f: -22 },
+      { key: -30, n: "Maternal Great", s: "M", ux: -31, a: ["D", "J", "S"] },
+      { key: -31, n: "Maternal Great", s: "F", m: -50, f: -51, a: ["B", "H", "L", "S"] },
+      { key: -42, n: "Great Uncle", s: "M", m: -30, f: -31, a: ["C", "J", "S"] },
+      { key: -43, n: "Great Aunt", s: "F", m: -30, f: -31, a: ["E", "G", "S"] },
+      { key: -50, n: "Maternal Great Great", s: "F", vir: -51, a: ["D", "I", "S"] },
+      { key: -51, n: "Maternal Great Great", s: "M", a: ["B", "H", "S"] }
+    ],
+      4 /* focus on this person */);
   }
-  
-  const load = () => {
-    const currentRef: ReactDiagram | null = diagramRef.current;
-    const diagram = currentRef?.getDiagram() as go.Diagram;
-    console.warn('test');
-    diagram.model = go.Model.fromJson(
-      { "class": "go.TreeModel",
-        "nodeDataArray": [
-        {"key":1, "name":"Stella Payne Diaz", "title":"CEO", "pic":"vite.svg"},
-        {"key":2, "name":"Luke Warm", "title":"VP Marketing/Sales", "pic":"vite.svg", "parent":1},
-        {"key":3, "name":"Meg Meehan Hoffa", "title":"Sales", "pic":"vite.svg", "parent":2},
-        {"key":4, "name":"Peggy Flaming", "title":"VP Engineering", "pic":"vite.svg", "parent":1},
-        {"key":5, "name":"Saul Wellingood", "title":"Manufacturing", "pic":"vite.svg", "parent":4},
-        {"key":6, "name":"Al Ligori", "title":"Marketing", "pic":"vite.svg", "parent":2},
-        {"key":7, "name":"Dot Stubadd", "title":"Sales Rep", "pic":"vite.svg", "parent":3},
-        {"key":8, "name":"Les Ismore", "title":"Project Mgr", "pic":"vite.svg", "parent":5},
-        {"key":9, "name":"April Lynn Parris", "title":"Events Mgr", "pic":"vite.svg", "parent":6},
-        {"key":10, "name":"Xavier Breath", "title":"Engineering", "pic":"vite.svg", "parent":4},
-        {"key":11, "name":"Anita Hammer", "title":"Process", "pic":"vite.svg", "parent":5},
-        {"key":12, "name":"Billy Aiken", "title":"Software", "pic":"vite.svg", "parent":10},
-        {"key":13, "name":"Stan Wellback", "title":"Testing", "pic":"vite.svg", "parent":10},
-        {"key":14, "name":"Marge Innovera", "title":"Hardware", "pic":"vite.svg", "parent":10},
-        {"key":15, "name":"Evan Elpus", "title":"Quality", "pic":"vite.svg", "parent":5},
-        {"key":16, "name":"Lotta B. Essen", "title":"Sales Rep", "pic":"vite.svg", "parent":3}
-        ]
+
+  // create and initialize the Diagram.model given an array of node data representing people
+  function setupDiagram(diagram, array, focusId) {
+    diagram.model =
+      new go.GraphLinksModel(
+        { // declare support for link label nodes
+          linkLabelKeysProperty: "labelKeys",
+          // this property determines which template is used
+          nodeCategoryProperty: "s",
+          // if a node data object is copied, copy its data.a Array
+          copiesArrays: true,
+          // create all of the nodes for people
+          nodeDataArray: array
+        });
+    setupMarriages(diagram);
+    setupParents(diagram);
+
+    const node = diagram.findNodeForKey(focusId);
+    if (node !== null) node.isSelected = true;
+  }
+
+  function findMarriage(diagram, a, b) {  // A and B are node keys
+    const nodeA = diagram.findNodeForKey(a);
+    const nodeB = diagram.findNodeForKey(b);
+    if (nodeA !== null && nodeB !== null) {
+      const it = nodeA.findLinksBetween(nodeB);  // in either direction
+      while (it.next()) {
+        const link = it.value;
+        // Link.data.category === "Marriage" means it's a marriage relationship
+        if (link.data !== null && link.data.category === "Marriage") return link;
       }
-    );
-    // make sure new data keys are unique positive integers
-    let lastkey = 1;
-    diagram.model.makeUniqueKeyFunction = (model, data) => {
-      let k = data.key || lastkey;
-      while (model.findNodeDataForKey(k)) k++;
-      data.key = lastkey = k;
-      return k;
-    };
+    }
+    return null;
   }
 
-  
-
-  const onModelChange: (obj: go.IncrementalData) => void = (obj: go.IncrementalData) => {
-    console.log(obj);
+  // now process the node data to determine marriages
+  function setupMarriages(diagram) {
+    const model = diagram.model;
+    const nodeDataArray = model.nodeDataArray;
+    for (let i = 0; i < nodeDataArray.length; i++) {
+      const data = nodeDataArray[i];
+      const key = data.key;
+      let uxs = data.ux;
+      if (uxs !== undefined) {
+        if (typeof uxs === "number") uxs = [uxs];
+        for (let j = 0; j < uxs.length; j++) {
+          const wife = uxs[j];
+          const wdata = model.findNodeDataForKey(wife);
+          if (key === wife || !wdata || wdata.s !== "F") {
+            console.log("cannot create Marriage relationship with self or unknown person " + wife);
+            continue;
+          }
+          const link = findMarriage(diagram, key, wife);
+          if (link === null) {
+            // add a label node for the marriage link
+            const mlab = { s: "LinkLabel" };
+            model.addNodeData(mlab);
+            // add the marriage link itself, also referring to the label node
+            const mdata = { from: key, to: wife, labelKeys: [mlab.key], category: "Marriage" };
+            model.addLinkData(mdata);
+          }
+        }
+      }
+      let virs = data.vir;
+      if (virs !== undefined) {
+        if (typeof virs === "number") virs = [virs];
+        for (let j = 0; j < virs.length; j++) {
+          const husband = virs[j];
+          const hdata = model.findNodeDataForKey(husband);
+          if (key === husband || !hdata || hdata.s !== "M") {
+            console.log("cannot create Marriage relationship with self or unknown person " + husband);
+            continue;
+          }
+          const link = findMarriage(diagram, key, husband);
+          if (link === null) {
+            // add a label node for the marriage link
+            const mlab = { s: "LinkLabel" };
+            model.addNodeData(mlab);
+            // add the marriage link itself, also referring to the label node
+            const mdata = { from: key, to: husband, labelKeys: [mlab.key], category: "Marriage" };
+            model.addLinkData(mdata);
+          }
+        }
+      }
+    }
   }
 
+  // process parent-child relationships once all marriages are known
+  function setupParents(diagram) {
+    const model = diagram.model;
+    const nodeDataArray = model.nodeDataArray;
+    for (let i = 0; i < nodeDataArray.length; i++) {
+      const data = nodeDataArray[i];
+      const key = data.key;
+      const mother = data.m;
+      const father = data.f;
+      if (mother !== undefined && father !== undefined) {
+        const link = findMarriage(diagram, mother, father);
+        if (link === null) {
+          // or warn no known mother or no known father or no known marriage between them
+          console.log("unknown marriage: " + mother + " & " + father);
+          continue;
+        }
+        const mdata = link.data;
+        if (mdata.labelKeys === undefined || mdata.labelKeys[0] === undefined) continue;
+        const mlabkey = mdata.labelKeys[0];
+        const cdata = { from: mlabkey, to: key };
+        diagram.model.addLinkData(cdata);
+      }
+    }
+  }
+
+  useEffect(() => {
+    console.warn(1);
+    init();
+  }, [])
 
 
   return (
-    <ReactDiagram
-        ref={diagramRef}
-        initDiagram={initDiagram}
-        divClassName='diagram-component'
-        style={{
-          width: '100%',
-          height: '80%'
-        }}
-        nodeDataArray={nodeDataArray}
-        linkDataArray={linkDataArray}
-        modelData={modelData}
-        skipsDiagramUpdate={skipsDiagramUpdate}
-        onModelChange={onModelChange}
-      />
-  )
+    <div id="myDiagramDiv" style={{
+      backgroundColor: "rgb(248, 248, 248)", 
+      border: "1px solid black",
+      width: "100%", 
+      height: "600px", 
+      position: "relative"
+    }}><canvas tabIndex={0} width="2108" height="1196" style={{
+      position: "absolute", 
+      top: "0px",
+      left: "0px", 
+      zIndex: "2", 
+      userSelect: "none",
+      width: "1054px", 
+      height: "598px"
+    }}></canvas>
+      <div style={{
+        position: "absolute",
+        overflow: "auto",
+        width: "1054px",
+        height: "598px",
+        zIndex: "1"
+      }}>
+        <div style={{
+          position: "absolute", 
+          width: "1px", 
+          height: "1px"
+        }}></div>
+      </div>
+    </div>
+  );
 }
-
