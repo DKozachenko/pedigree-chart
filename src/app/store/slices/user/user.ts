@@ -1,7 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit'
 import { IUserState } from './user-state';
 import { ISetUserPayload } from './set-user-payload';
-import { State } from '../store';
+import { State } from '../../store';
 
 const updateLocalStorage = (state: IUserState): void => {
   for (const [key, value] of Object.entries(state)) {
@@ -15,7 +15,7 @@ const updateLocalStorage = (state: IUserState): void => {
 
 export const userSlice = createSlice({
   name: 'user',
-  initialState: {
+  initialState: <IUserState>{
     isGuest: localStorage.getItem('isGuest') ? localStorage.getItem('isGuest') === 'true' : null,
     isAdmin: localStorage.getItem('isAdmin') ? localStorage.getItem('isAdmin') === 'true' : null,
     name: localStorage.getItem('name'),
