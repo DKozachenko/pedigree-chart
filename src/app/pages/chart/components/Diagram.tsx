@@ -91,32 +91,77 @@ export function Diagram() {
           type: go.Panel.Vertical,
           margin: new go.Margin(5, 0, 0, 0),
         },
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            maxSize: new go.Size(120, NaN),
-            stroke: diagramConfigState.textColor
+        $(go.Panel, "Auto", {},
+          $(go.Shape, { 
+            fill: diagramConfigState.label.backgroundColor, 
+            strokeWidth: 1,
+            stroke: diagramConfigState.label.borderColor
+          }),
+          $(go.Panel, { 
+            name: "INFO",
+            type: go.Panel.Vertical,
+            padding: new go.Margin(5, 10, 5, 10),
           },
-          new go.Binding("text", "name", (name: string) => "Имя: " + name)),
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            maxSize: new go.Size(220, NaN),
-            stroke: diagramConfigState.textColor
-          },
-          new go.Binding("text", "lastName", (lastName: string) => "Фамилия: " + lastName)),
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            maxSize: new go.Size(170, NaN),
-            stroke: diagramConfigState.textColor
-          },
-          new go.Binding("text", "middleName", (middleName: string) => "Отчество: " + middleName)),
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            font: "Italic 13px sans-serif",
-            maxSize: new go.Size(170, NaN),
-            stroke: diagramConfigState.textColor
-          },
-          new go.Binding("text", "relationship"))
-        ),
+            $(go.Panel, { 
+              name: "LASTNAME PANEL",
+              type: go.Panel.Horizontal,
+            },
+              $(go.TextBlock, { 
+                textAlign: "center", 
+                stroke: diagramConfigState.label.textColor,
+                font: "Bold 13px sans-serif",
+                text: "Фамилия: ",
+                margin: new go.Margin(0, 3, 0, 0)
+              }),
+              $(go.TextBlock, { 
+                textAlign: "center",
+                stroke: diagramConfigState.label.textColor
+              },
+              new go.Binding("text", "lastName", (name: string) => name)),
+            ),
+            $(go.Panel, { 
+              name: "NAME PANEL",
+              type: go.Panel.Horizontal,
+            },
+              $(go.TextBlock, { 
+                textAlign: "center", 
+                stroke: diagramConfigState.label.textColor,
+                font: "Bold 13px sans-serif",
+                text: "Имя: ",
+                margin: new go.Margin(0, 3, 0, 0)
+              }),
+              $(go.TextBlock, { 
+                textAlign: "center", 
+                maxSize: new go.Size(120, NaN),
+                stroke: diagramConfigState.label.textColor,
+              },
+              new go.Binding("text", "name", (name: string) => name)),
+            ),
+            $(go.Panel, { 
+              name: "MIDDLENAME PANEL",
+              type: go.Panel.Horizontal,
+            },
+              $(go.TextBlock, { 
+                textAlign: "center", 
+                stroke: diagramConfigState.label.textColor,
+                font: "Bold 13px sans-serif",
+                text: "Отчество: ",
+                margin: new go.Margin(0, 3, 0, 0)
+              }),
+              $(go.TextBlock, {
+                textAlign: "center",
+                stroke: diagramConfigState.label.textColor
+              },
+              new go.Binding("text", "middleName", (name: string) => name)),
+            ),
+            $(go.TextBlock, { 
+              textAlign: "center", 
+              font: "Italic 13px sans-serif",
+              stroke: diagramConfigState.label.textColor
+            },
+            new go.Binding("text", "relationship"))
+          )
+        ))
       ));
 
     // Женщины
@@ -137,41 +182,86 @@ export function Diagram() {
             strokeWidth: 2, 
             fill: diagramConfigState.female.figureBackgroundColor, 
             stroke: diagramConfigState.figureBorderColor, 
-            portId: "" 
+            portId: ""
           }),
         ),
         $(go.Panel, { 
-          name: "INFO",
-          type: go.Panel.Vertical,
-          margin: new go.Margin(5, 0, 0, 0),
-        },
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            maxSize: new go.Size(120, NaN),
-            stroke: diagramConfigState.textColor
+            name: "INFO",
+            type: go.Panel.Vertical,
+            margin: new go.Margin(5, 0, 0, 0),
           },
-          new go.Binding("text", "name", (name: string) => "Имя: " + name)),
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            maxSize: new go.Size(200, NaN),
-            wrap: go.TextBlock.WrapFit,
-            stroke: diagramConfigState.textColor
-          },
-          new go.Binding("text", "lastName", (lastName: string) => "Фамилия: " + lastName)),
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            maxSize: new go.Size(170, NaN), 
-            stroke: diagramConfigState.textColor
-          },
-          new go.Binding("text", "middleName", (middleName: string) => "Отчество: " + middleName)),
-          $(go.TextBlock, { 
-            textAlign: "center", 
-            font: "Italic 13px sans-serif",
-            maxSize: new go.Size(170, NaN),
-            stroke: diagramConfigState.textColor
-          },
-          new go.Binding("text", "relationship"))
-        ),
+          $(go.Panel, "Auto", {},
+            $(go.Shape, { 
+              fill: diagramConfigState.label.backgroundColor, 
+              strokeWidth: 1,
+              stroke: diagramConfigState.label.borderColor
+            }),
+            $(go.Panel, { 
+              name: "INFO",
+              type: go.Panel.Vertical,
+              padding: new go.Margin(5, 10, 5, 10),
+            },
+              $(go.Panel, { 
+                name: "LASTNAME PANEL",
+                type: go.Panel.Horizontal,
+              },
+                $(go.TextBlock, { 
+                  textAlign: "center", 
+                  stroke: diagramConfigState.label.textColor,
+                  font: "Bold 13px sans-serif",
+                  text: "Фамилия: ",
+                  margin: new go.Margin(0, 3, 0, 0)
+                }),
+                $(go.TextBlock, { 
+                  textAlign: "center",
+                  stroke: diagramConfigState.label.textColor
+                },
+                new go.Binding("text", "lastName", (name: string) => name)),
+              ),
+              $(go.Panel, { 
+                name: "NAME PANEL",
+                type: go.Panel.Horizontal,
+              },
+                $(go.TextBlock, { 
+                  textAlign: "center", 
+                  stroke: diagramConfigState.label.textColor,
+                  font: "Bold 13px sans-serif",
+                  text: "Имя: ",
+                  margin: new go.Margin(0, 3, 0, 0)
+                }),
+                $(go.TextBlock, { 
+                  textAlign: "center", 
+                  maxSize: new go.Size(120, NaN),
+                  stroke: diagramConfigState.label.textColor,
+                },
+                new go.Binding("text", "name", (name: string) => name)),
+              ),
+              $(go.Panel, { 
+                name: "MIDDLENAME PANEL",
+                type: go.Panel.Horizontal,
+              },
+                $(go.TextBlock, { 
+                  textAlign: "center", 
+                  stroke: diagramConfigState.label.textColor,
+                  font: "Bold 13px sans-serif",
+                  text: "Отчество: ",
+                  margin: new go.Margin(0, 3, 0, 0)
+                }),
+                $(go.TextBlock, {
+                  textAlign: "center",
+                  stroke: diagramConfigState.label.textColor
+                },
+                new go.Binding("text", "middleName", (name: string) => name)),
+              ),
+              $(go.TextBlock, { 
+                textAlign: "center", 
+                font: "Italic 13px sans-serif",
+                stroke: diagramConfigState.label.textColor
+              },
+              new go.Binding("text", "relationship"))
+            )
+          ),
+        )
       ));
 
     // чтобы ничего не отображалось на ссылке для "брака"

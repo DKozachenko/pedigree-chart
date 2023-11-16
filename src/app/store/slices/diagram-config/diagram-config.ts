@@ -1,16 +1,22 @@
+import { Figure } from './figure.type'
+
 export interface IDiagramConfig {
   male: {
-    figureType: string,
+    figureType: Figure,
     figureBackgroundColor: string
   },
   female: {
-    figureType: string,
+    figureType: Figure,
     figureBackgroundColor: string
   },
   figureSize: number,
   figureBorderColor: string,
   linkColor: string,
   mariageLinkColor: string,
-  textColor: string,
+  label: {
+    textColor: string,
+    backgroundColor: string,
+    borderColor: string
+  }
   selectedNodeColor: string
 }

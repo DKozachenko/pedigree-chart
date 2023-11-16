@@ -17,7 +17,11 @@ export const diagramConfigSlice = createSlice({
     figureBorderColor: "#696969",
     linkColor: "#696969",
     mariageLinkColor: "black",
-    textColor: "black",
+    label: {
+      textColor: "black",
+      backgroundColor: "white",
+      borderColor: "black"
+    },
     selectedNodeColor: "#f3fc90"
   },
   reducers: {
