@@ -2,11 +2,12 @@ import * as go from 'gojs';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { GenogramLayout } from '../models/classes';
 import { Box } from '@mui/material';
-import { IRelative, selectRelatives, useCustomSelector } from '../../../store';
+import { IDiagramConfig, IRelative, selectDiagramConfig, selectRelatives, useCustomSelector } from '../../../store';
 
 export function Diagram() {
   const relativesState: IRelative[] = useCustomSelector(selectRelatives);
-  const [diagram, setDiagram]: [go.Diagram | null, Dispatch<SetStateAction<go.Diagram| null>>] = useState<go.Diagram | null>(null);
+  const diagramConfigState: IDiagramConfig = useCustomSelector(selectDiagramConfig);
+  const [diagram, setDiagram]: [go.Diagram | null, Dispatch<SetStateAction<go.Diagram | null>>] = useState<go.Diagram | null>(null);
   
   const initDiagram: () => void = () => {
     const $ = go.GraphObject.make;
@@ -23,7 +24,7 @@ export function Diagram() {
           layerName: "Grid" 
         },  
         $(go.Shape, "Circle", { 
-          fill: "#f3fc90", 
+          fill: diagramConfigState.selectedNodeColor, 
           stroke: null 
         }),
         $(go.Placeholder, { 
@@ -46,15 +47,15 @@ export function Diagram() {
           selectable: false 
         },
         $(go.Shape, { 
-          stroke: "#696969", 
-          strokeWidth: 2 
+          stroke: diagramConfigState.linkColor, 
+          strokeWidth: 2
         }))
     });
 
     // нужно, чтобы gojs смог добавить свои атрибуты
-    const data: IRelative[] = relativesState.map((item) => Object.assign({
+    const data: IRelative[] = relativesState.map((relative: IRelative) => Object.assign({
       relationship: "Шурин"
-    }, item));
+    }, relative));
     setupDiagram(diagram, data, 6);
 
     setDiagram(diagram);
@@ -76,12 +77,12 @@ export function Diagram() {
         $(go.Panel, { 
           name: "ICON" 
         },
-          $(go.Shape, "Square", { 
-            width: 40, 
-            height: 40, 
+          $(go.Shape, diagramConfigState.male.figureType, { 
+            width: diagramConfigState.figureSize, 
+            height: diagramConfigState.figureSize, 
             strokeWidth: 2, 
-            fill: "#b9d2fa", 
-            stroke: "#696969", 
+            fill: diagramConfigState.male.figureBackgroundColor, 
+            stroke: diagramConfigState.figureBorderColor, 
             portId: "" 
           })
         ),
@@ -93,22 +94,26 @@ export function Diagram() {
           $(go.TextBlock, { 
             textAlign: "center", 
             maxSize: new go.Size(120, NaN),
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "name", (name: string) => "Имя: " + name)),
           $(go.TextBlock, { 
             textAlign: "center", 
             maxSize: new go.Size(220, NaN),
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "lastName", (lastName: string) => "Фамилия: " + lastName)),
           $(go.TextBlock, { 
             textAlign: "center", 
-            maxSize: new go.Size(170, NaN), 
+            maxSize: new go.Size(170, NaN),
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "middleName", (middleName: string) => "Отчество: " + middleName)),
           $(go.TextBlock, { 
             textAlign: "center", 
             font: "Italic 13px sans-serif",
-            maxSize: new go.Size(170, NaN), 
+            maxSize: new go.Size(170, NaN),
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "relationship"))
         ),
@@ -126,12 +131,12 @@ export function Diagram() {
         $(go.Panel, { 
           name: "ICON" 
         },
-          $(go.Shape, "Circle", {
-            width: 40, 
-            height: 40, 
+          $(go.Shape, diagramConfigState.female.figureType, {
+            width: diagramConfigState.figureSize, 
+            height: diagramConfigState.figureSize, 
             strokeWidth: 2, 
-            fill: "#faafd9", 
-            stroke: "#696969", 
+            fill: diagramConfigState.female.figureBackgroundColor, 
+            stroke: diagramConfigState.figureBorderColor, 
             portId: "" 
           }),
         ),
@@ -143,23 +148,27 @@ export function Diagram() {
           $(go.TextBlock, { 
             textAlign: "center", 
             maxSize: new go.Size(120, NaN),
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "name", (name: string) => "Имя: " + name)),
           $(go.TextBlock, { 
             textAlign: "center", 
             maxSize: new go.Size(200, NaN),
-            wrap: go.TextBlock.WrapFit
+            wrap: go.TextBlock.WrapFit,
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "lastName", (lastName: string) => "Фамилия: " + lastName)),
           $(go.TextBlock, { 
             textAlign: "center", 
             maxSize: new go.Size(170, NaN), 
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "middleName", (middleName: string) => "Отчество: " + middleName)),
           $(go.TextBlock, { 
             textAlign: "center", 
             font: "Italic 13px sans-serif",
-            maxSize: new go.Size(170, NaN), 
+            maxSize: new go.Size(170, NaN),
+            stroke: diagramConfigState.textColor
           },
           new go.Binding("text", "relationship"))
         ),
@@ -180,7 +189,7 @@ export function Diagram() {
   const getLinkTemplateMap: () => go.Map<string, go.Link> = () => {
     const $ = go.GraphObject.make;
     const result: go.Map<string, go.Link> = new go.Map<string, go.Link>();
-    result.add("Marriage", // ссылка на "брак"
+    result.add("Marriage",
       $(go.Link, { 
         routing: go.Link.AvoidsNodes, 
         corner: 10,
@@ -192,25 +201,25 @@ export function Diagram() {
       },
         $(go.Shape, { 
           strokeWidth: 3.5, 
-          stroke: "black" 
+          stroke: diagramConfigState.mariageLinkColor 
         })
       ));
     return result;
   }
 
-  const setupDiagram: (diagram: go.Diagram, array: object[], focusId: number) => void = (diagram: go.Diagram, array: object[], focusId: number) => {
+  const setupDiagram: (diagram: go.Diagram, data: IRelative[], focusId: number) => void = (diagram: go.Diagram, data: IRelative[], focusId: number) => {
     diagram.model = new go.GraphLinksModel({
       linkLabelKeysProperty: "labelKeys",
-      nodeCategoryProperty: "s",
+      nodeCategoryProperty: "gender",
       copiesArrays: true,
-      nodeDataArray: array
+      nodeDataArray: data
     });
     setupMarriages(diagram);
     setupParents(diagram);
 
     const node: go.Node | null = diagram.findNodeForKey(focusId);
 
-    if (node !== null) { 
+    if (node) { 
       node.isSelected = true; 
     }
   }
@@ -218,12 +227,14 @@ export function Diagram() {
   const findMarriage: (diagram: go.Diagram, key1: number, key2: number) => go.Link | null = (diagram: go.Diagram, key1: number, key2: number) => {
     const nodeA: go.Node | null = diagram.findNodeForKey(key1);
     const nodeB: go.Node | null = diagram.findNodeForKey(key2);
-    if (nodeA !== null && nodeB !== null) {
+    if (nodeA && nodeB) {
       const it: go.Iterator<go.Link> = nodeA.findLinksBetween(nodeB);
       while (it.next()) {
         const link: go.Link = it.value;
-        // если между узлами заключен брак
-        if (link.data !== null && link.data.category === "Marriage") { return link; }
+
+        if (link.data && link.data.category === "Marriage") { 
+          return link; 
+        }
       }
     }
 
@@ -232,60 +243,54 @@ export function Diagram() {
 
   const setupMarriages: (diagram: go.Diagram) => void = (diagram: go.Diagram) => {
     const model: go.Model = diagram.model;
-    const nodeDataArray: go.ObjectData[] = model.nodeDataArray;
+    const nodeDataArray: IRelative[] = model.nodeDataArray as IRelative[];
     for (let i = 0; i < nodeDataArray.length; i++) {
-      const data: go.ObjectData = nodeDataArray[i];
-      const key: number = data.key;
-      let uxs: number[] | number | undefined = data.ux;
-      if (uxs !== undefined) {
-        if (typeof uxs === "number") { 
-          uxs = [uxs]; 
-        }
-        for (let j = 0; j < uxs.length; j++) {
-          const wife: number = uxs[j];
-          const wdata: go.ObjectData | null = model.findNodeDataForKey(wife);
-          if (key === wife || !wdata || wdata.s !== "F") {
-            console.log("cannot create Marriage relationship with self or unknown person " + wife);
+      const relative: IRelative = nodeDataArray[i];
+      const key: number = relative.key;
+      const wifeKeys: number[] | undefined = relative.wifeKeys;
+      
+      if (wifeKeys) {
+        for (let j = 0; j < wifeKeys.length; j++) {
+          const wifeKey: number = wifeKeys[j];
+          const wifeData: go.ObjectData | null = model.findNodeDataForKey(wifeKey);
+          if (key === wifeKey || !wifeData || wifeData.gender !== "F") {
+            console.log(`Невозможно создать брачные отношения с самим собой или с неизвестным человеком (идентификатор: ${wifeKey})`);
             continue;
           }
-          const link: go.Link | null = findMarriage(diagram, key, wife);
-          if (link === null) {
-            const mlab: go.ObjectData = { s: "LinkLabel" };
-            model.addNodeData(mlab);
-            const mdata: object = { 
+          const link: go.Link | null = findMarriage(diagram, key, wifeKey);
+          if (!link) {
+            const mariageLabel: go.ObjectData = { gender: "LinkLabel" };
+            model.addNodeData(mariageLabel);
+            const mariageData: go.ObjectData = { 
               from: key, 
-              to: wife, 
-              labelKeys: [mlab.key], 
+              to: wifeKey, 
+              labelKeys: [mariageLabel.key], 
               category: "Marriage" 
             };
-            (model as go.Model & { addLinkData: (data: go.ObjectData) => void }).addLinkData(mdata);
+            (model as go.Model & { addLinkData: (data: go.ObjectData) => void }).addLinkData(mariageData);
           }
         }
       }
-      let virs: number[] | number | undefined = data.vir;
-      if (virs !== undefined) {
-        if (typeof virs === "number") { 
-          virs = [virs]; 
-        }
-        for (let j = 0; j < virs.length; j++) {
-          const husband: number = virs[j];
-          const hdata: go.ObjectData | null = model.findNodeDataForKey(husband);
-          if (key === husband || !hdata || hdata.s !== "M") {
-            console.log("cannot create Marriage relationship with self or unknown person " + husband);
+      const husbandKeys: number[] | undefined = relative.husbandKeys;
+      if (husbandKeys) {
+        for (let j = 0; j < husbandKeys.length; j++) {
+          const husbandKey: number = husbandKeys[j];
+          const husbandData: go.ObjectData | null = model.findNodeDataForKey(husbandKey);
+          if (key === husbandKey || !husbandData || husbandData.gender !== "M") {
+            console.log(`Невозможно создать брачные отношения с самим собой или с неизвестным человеком (идентификатор: ${husbandKey})`);
             continue;
           }
-          const link: go.Link | null = findMarriage(diagram, key, husband);
-          if (link === null) {
-            const mlab: go.ObjectData = { s: "LinkLabel" };
-            model.addNodeData(mlab);
-            const mdata: object = { 
+          const link: go.Link | null = findMarriage(diagram, key, husbandKey);
+          if (!link) {
+            const mariageLabel: go.ObjectData = { gender: "LinkLabel" };
+            model.addNodeData(mariageLabel);
+            const mariageData: go.ObjectData = { 
               from: key, 
-              to: husband, 
-              labelKeys: 
-              [mlab.key], 
+              to: husbandKey, 
+              labelKeys: [mariageLabel.key], 
               category: "Marriage" 
             };
-            (model as go.Model & { addLinkData: (data: go.ObjectData) => void }).addLinkData(mdata);
+            (model as go.Model & { addLinkData: (data: go.ObjectData) => void }).addLinkData(mariageData);
           }
         }
       }
@@ -294,25 +299,25 @@ export function Diagram() {
 
   const setupParents: (diagram: go.Diagram) => void = (diagram: go.Diagram) => {
     const model: go.Model = diagram.model;
-    const nodeDataArray: go.ObjectData[] = model.nodeDataArray;
+    const nodeDataArray: IRelative[] = model.nodeDataArray as IRelative[];
     for (let i = 0; i < nodeDataArray.length; i++) {
-      const data: go.ObjectData = nodeDataArray[i];
-      const key: number = data.key;
-      const mother: number | undefined = data.m;
-      const father: number | undefined = data.f;
-      if (mother !== undefined && father !== undefined) {
-        const link: go.Link | null = findMarriage(diagram, mother, father);
-        if (link === null) {
-          console.log("unknown marriage: " + mother + " & " + father);
+      const relative: IRelative = nodeDataArray[i];
+      const key: number = relative.key;
+      const motherKey: number | undefined = relative.motherKey;
+      const fatherKey: number | undefined = relative.fatherKey;
+      if (motherKey !== undefined && fatherKey !== undefined) {
+        const link: go.Link | null = findMarriage(diagram, motherKey, fatherKey);
+        if (!link) {
+          console.log(`Неизвестный брак: идентфикатор матери - ${motherKey}, идентификатор отца - ${fatherKey}`);
           continue;
         }
-        const mdata: { labelKeys: number[] } = link.data;
-        if (mdata.labelKeys === undefined || mdata.labelKeys[0] === undefined) { 
+        const mariageData: { labelKeys: number[] } = link.data;
+        if (!mariageData.labelKeys || mariageData.labelKeys[0] === undefined) { 
           continue; 
         }
-        const mlabkey: number = mdata.labelKeys[0];
+        const mariageLabelKey: number = mariageData.labelKeys[0];
         const cdata: object = { 
-          from: mlabkey, 
+          from: mariageLabelKey, 
           to: key 
         };
         (model as go.Model & { addLinkData: (data: go.ObjectData) => void }).addLinkData(cdata);

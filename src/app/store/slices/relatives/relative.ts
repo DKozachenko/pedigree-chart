@@ -3,11 +3,9 @@ export interface IRelative {
   name: string,
   lastName: string,
   middleName: string,
-  s: "F" | "M",
-  m?: number,
-  f?: number,
-  // TODO: переделать на просто массив
-  ux?: number[] | number,
-  // TODO: переделать на просто массив
-  vir?: number[] | number
+  gender: "F" | "M",
+  motherKey?: number,
+  fatherKey?: number,
+  wifeKeys?: number[],
+  husbandKeys?: number[]
 }
