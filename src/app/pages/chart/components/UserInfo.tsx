@@ -3,13 +3,24 @@ import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch } from '.
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useState, Dispatch as ReactDispatch, SetStateAction } from 'react';
+import { RelationshipService } from '../services';
+import { IRelativeNode } from '../models/interfaces';
+import { RelativeSearch } from './RelativeSearch';
 
-export function UserInfo() {
+type Props = {
+  onChange: (selectedKey: number) => void
+}
+
+export function UserInfo({ onChange }: Props) {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const userState: IUserState = useCustomSelector(selectUser);
+  const relationshipService: RelationshipService = new RelationshipService();
+  const relativesForSelect: Pick<IRelativeNode, 'key' | 'initials'>[] = relationshipService
+    .getRelativesForSelect()
+    .sort((a: Pick<IRelativeNode, 'key' | 'initials'>, b: Pick<IRelativeNode, 'key' | 'initials'>) => a.initials.localeCompare(b.initials));
 
-  const [currentRelative, setCurrentRelative]: [string, ReactDispatch<SetStateAction<string>>] = useState('');
+  const [currentRelative, setCurrentRelative]: [string, ReactDispatch<SetStateAction<string>>] = useState<string>('');
   
   const extractUserInfo: () => string = () => {
     if (userState.isAdmin) {
@@ -31,8 +42,9 @@ export function UserInfo() {
   }
   
   const onRelativesChange = (event: SelectChangeEvent) => {
-    const value: string = event.target.value;
-    setCurrentRelative(value);
+    const personKey: string = event.target.value;
+    setCurrentRelative(personKey);
+    onChange(+personKey);
   };
 
   return (
@@ -53,6 +65,10 @@ export function UserInfo() {
           { extractUserInfo() }
         </Typography>
       </Typography>
+
+      <Box component="div" sx={{ mt: 1 }}>
+        <RelativeSearch></RelativeSearch>
+      </Box>
 
       { userState.isGuest &&
         <Paper variant="outlined" sx={{ bgcolor: '#f0f0f0', border: '1px solid #787878', p: 0.5, mt: 1 }}>
@@ -80,9 +96,8 @@ export function UserInfo() {
               value={currentRelative}
               onChange={onRelativesChange}
             >
-              <MenuItem value={1}>Клачков В.В.</MenuItem>
-              <MenuItem value={2}>Орлова О.В.</MenuItem>
-              <MenuItem value={3}>Шишмарева Е.И.</MenuItem>
+              {relativesForSelect.map((relativeForSelect: Pick<IRelativeNode, 'key' | 'initials'>) => 
+                <MenuItem key={relativeForSelect.key} value={relativeForSelect.key}>{ relativeForSelect.initials }</MenuItem>)}
             </Select>
           </Box>
         </>

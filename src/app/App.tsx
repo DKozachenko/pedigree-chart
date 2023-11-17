@@ -1,15 +1,20 @@
 import { Routes, Route } from 'react-router-dom';
 import { Auth, Chart } from './pages';
 import { ProtectedRoute } from './components';
-import { IUserState, selectUser, useCustomSelector } from './store';
+import { IRelative, IUserState, findRelativeByUserInfo, selectRelatives, selectUser, useCustomSelector } from './store';
 
 export function App() {
   const userState: IUserState = useCustomSelector(selectUser);
+  const relativesState: IRelative[] = useCustomSelector(selectRelatives);
+
+  const isUserExists: () => boolean = () => {
+    return !!findRelativeByUserInfo(relativesState, userState);
+  }
 
   return (
     <Routes>
       <Route path="/" element={
-        <ProtectedRoute condition={userState.isAdmin || userState.isGuest || userState.name === 'Диана'} redirectPath="auth">
+        <ProtectedRoute condition={userState.isAdmin || userState.isGuest || isUserExists()} redirectPath="auth">
           <Chart></Chart>
         </ProtectedRoute>
       }></Route>

@@ -2,6 +2,18 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit'
 import { IUserState } from './user-state';
 import { ISetUserPayload } from './set-user-payload';
 import { State } from '../../store';
+import { IRelative } from '../relatives';
+
+export const findRelativeByUserInfo: (data: IRelative[], userState: IUserState) => IRelative = (data: IRelative[], userState: IUserState) => {
+  const comparator = userState.middleName
+    ? (relative: IRelative) => relative.name === userState.name && 
+      relative.lastName === userState.lastName && 
+      relative.middleName === userState.middleName
+    : (relative: IRelative) => relative.name === userState.name && 
+      relative.lastName === userState.lastName;
+
+  return data.find(comparator) as IRelative;
+}
 
 const updateLocalStorage = (state: IUserState): void => {
   for (const [key, value] of Object.entries(state)) {
