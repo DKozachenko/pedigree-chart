@@ -1,17 +1,12 @@
 import { Box, Button, InputLabel, MenuItem, Paper, Select, SelectChangeEvent, Typography } from '@mui/material';
-import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch } from '../../../store';
+import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch, setCurrentRelativeKey } from '../../../store';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useState, Dispatch as ReactDispatch, SetStateAction } from 'react';
 import { RelationshipService } from '../services';
 import { IRelativeNode } from '../models/interfaces';
-import { RelativeSearch } from './RelativeSearch';
 
-type Props = {
-  onChange: (selectedKey: number) => void
-}
-
-export function UserInfo({ onChange }: Props) {
+export function UserInfo() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const userState: IUserState = useCustomSelector(selectUser);
@@ -44,7 +39,7 @@ export function UserInfo({ onChange }: Props) {
   const onRelativesChange = (event: SelectChangeEvent) => {
     const personKey: string = event.target.value;
     setCurrentRelative(personKey);
-    onChange(+personKey);
+    dispatch(setCurrentRelativeKey(+personKey));
   };
 
   return (
@@ -65,10 +60,6 @@ export function UserInfo({ onChange }: Props) {
           { extractUserInfo() }
         </Typography>
       </Typography>
-
-      <Box component="div" sx={{ mt: 1 }}>
-        <RelativeSearch></RelativeSearch>
-      </Box>
 
       { userState.isGuest &&
         <Paper variant="outlined" sx={{ bgcolor: '#f0f0f0', border: '1px solid #787878', p: 0.5, mt: 1 }}>

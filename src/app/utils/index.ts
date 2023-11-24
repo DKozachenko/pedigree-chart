@@ -1,0 +1,1 @@
+export { findRelativeByUserInfo } from './find-relative-by-user-info';

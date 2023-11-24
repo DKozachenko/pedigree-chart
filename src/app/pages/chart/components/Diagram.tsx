@@ -2,23 +2,20 @@ import * as go from 'gojs';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { GenogramLayout } from '../models/classes';
-import { IDiagramConfig, IRelative, selectDiagramConfig, useCustomSelector } from '../../../store';
+import { IDiagramConfig, IRelative, selectDiagramConfig, selectRelatives, useCustomSelector } from '../../../store';
 import { RelationshipService } from '../services';
 import { IRelativeNode } from '../models/interfaces';
 import { RelativeInfoModal } from './RelativeInfoModal';
+import { GENOGRAM_CLASS } from '../models/constants';
 
-type Props = {
-  selectedKey: number | null
-}
-
-export function Diagram({ selectedKey }: Props) {
+export function Diagram() {
   const relationshipService: RelationshipService = new RelationshipService();
   const diagramConfigState: IDiagramConfig = useCustomSelector(selectDiagramConfig);
+  const { currentRelativeKey } = useCustomSelector(selectRelatives);
   // TODO: можно ли в хук вынести?
   const [diagram, setDiagram]: [go.Diagram | null, Dispatch<SetStateAction<go.Diagram | null>>] = useState<go.Diagram | null>(null);
   const [isInfoModalOpen, setIsInfoModalOpen]: [boolean, Dispatch<SetStateAction<boolean>>] = useState<boolean>(false);
   const [clickedRelative, setClickedRelative]: [IRelative | null, Dispatch<SetStateAction<IRelative | null>>] = useState<IRelative | null>(null);
-  
   
   const closeInfoModal: () => void = () => {
     setIsInfoModalOpen(false);
@@ -31,7 +28,7 @@ export function Diagram({ selectedKey }: Props) {
       diagram.div = null;
     }
 
-    const genogram = new go.Diagram("genogram", {
+    const genogram = new go.Diagram(GENOGRAM_CLASS, {
       "animationManager.isEnabled": false,
       // автомасштабирование, чтобы все узлы влезли на экран
       // initialAutoScale: go.Diagram.Uniform,
@@ -71,7 +68,7 @@ export function Diagram({ selectedKey }: Props) {
         }))
     });
 
-    const nodes: IRelativeNode[] = relationshipService.getRelativesForDiagram(selectedKey);
+    const nodes: IRelativeNode[] = relationshipService.getRelativesForDiagram(currentRelativeKey);
     setupDiagram(genogram, nodes);
     setDiagram(genogram);
   }
@@ -137,7 +134,7 @@ export function Diagram({ selectedKey }: Props) {
               margin: new go.Margin(0, 0, 0, 3)
             },
             new go.Binding("text", "key", (key: number) => ` (ID: ${key})`)),
-          ), selectedKey
+          ), currentRelativeKey
             ? $(go.TextBlock, { 
                 textAlign: "center", 
                 font: "Italic 13px sans-serif",
@@ -201,8 +198,8 @@ export function Diagram({ selectedKey }: Props) {
     setupMarriages(diagram);
     setupParents(diagram);
 
-    if (selectedKey) {
-      const node: go.Node | null = diagram.findNodeForKey(selectedKey);
+    if (currentRelativeKey) {
+      const node: go.Node | null = diagram.findNodeForKey(currentRelativeKey);
 
       if (node) { 
         // TODO: как-то заселектить ноду и отцентрироваться по ней
@@ -315,13 +312,13 @@ export function Diagram({ selectedKey }: Props) {
 
   useEffect(() => {
     init();
-  }, [selectedKey]);
+  }, [currentRelativeKey]);
 
   return (
     <>
       <Box 
         component="div" 
-        id="genogram" 
+        id={GENOGRAM_CLASS}
         sx={{
           bgcolor: "#fff0",
           width: "100%", 

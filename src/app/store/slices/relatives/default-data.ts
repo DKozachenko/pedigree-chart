@@ -31,7 +31,7 @@ export const DEFAULT_DATA: IRelative[] = [
   { key: 18, name: 'Евгений', lastName: 'Клачков', middleName: 'Федорович', gender: 'M', parents: [19, 20] },
   { key: 23, name: 'Татьяна', lastName: 'Михайлова', gender: 'F', parents: [19, 20] },
   { key: 24, name: 'Владимир', lastName: '', gender: 'M' },
-  { key: 25, name: 'Женя', lastName: 'Михайлова', gender: 'F', parents: [23, 24] },
+  { key: 25, name: 'Женя', lastName: 'Михайлова', gender: 'M', parents: [23, 24] },
   { key: 26, name: 'Костя', lastName: 'Михайлов', gender: 'M', parents: [23, 24] },
   { key: 19, name: 'Валентина', lastName: 'Клачкова', middleName: 'Федоровна', gender: 'F' },
   { key: 20, name: 'Фёдор', lastName: 'Клачков', gender: 'M' },

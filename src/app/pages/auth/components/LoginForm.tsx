@@ -4,8 +4,11 @@ import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useDispatch } from 'react-redux';
 import { Dispatch } from '@reduxjs/toolkit';
-import { setGuest, setUser, setAdmin, ISetUserPayload } from '../../../store';
+import { setGuest, setUser, setAdmin, ISetUserPayload, useCustomSelector, selectRelatives, setCurrentRelativeKey, IRelative } from '../../../store';
 import * as yup from "yup"
+import { findRelativeByUserInfo } from '../../../utils';
+import { SetStateAction, useState, Dispatch as ReactDispatch } from 'react';
+import { NonExistedRelativeAlert } from '.';
 
 const formSchema = yup
   .object({
@@ -18,6 +21,13 @@ const formSchema = yup
 export function LoginForm() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
+  const { relatives } = useCustomSelector(selectRelatives);
+
+  const [isNonExistedRelativeModalOpen, setIsNonExistedRelativeModalOpen]: [boolean, ReactDispatch<SetStateAction<boolean>>] = useState<boolean>(false);
+  
+  const closeNonExistedModal: () => void = () => {
+    setIsNonExistedRelativeModalOpen(false);
+  } 
 
   const { control, handleSubmit, formState: { errors, isValid } } = useForm<ISetUserPayload>({
     resolver: yupResolver(formSchema),
@@ -30,17 +40,25 @@ export function LoginForm() {
   });
 
   const login: SubmitHandler<ISetUserPayload> = (data: ISetUserPayload) => {
+    const currentRelative: IRelative | undefined = findRelativeByUserInfo(relatives, data);
+    if (!currentRelative) {
+      setIsNonExistedRelativeModalOpen(true);
+      return;
+    }
     dispatch(setUser(data));
+    dispatch(setCurrentRelativeKey(currentRelative.key));
     navigate('/');
   }
 
   const loginAsGuest = (): void => {
     dispatch(setGuest());
+    dispatch(setCurrentRelativeKey(null));
     navigate('/');
   }
 
   const loginAsAdmin = (): void => {
     dispatch(setAdmin());
+    dispatch(setCurrentRelativeKey(null));
     navigate('/');
   }
 
@@ -127,6 +145,9 @@ export function LoginForm() {
           Войти как админ
         </Button>
       </Box>
+
+      { isNonExistedRelativeModalOpen && 
+        <NonExistedRelativeAlert isOpen={isNonExistedRelativeModalOpen} onClose={closeNonExistedModal}></NonExistedRelativeAlert> }
     </Box>
   )
 }

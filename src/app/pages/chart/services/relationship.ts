@@ -1,9 +1,9 @@
 import { IRelative, selectRelatives, useCustomSelector } from '../../../store';
-import { RELATIONSHIPS_MAP } from '../models/constants/relationships-map';
+import { RELATIONSHIPS_MAP } from '../models/constants';
 import { IRelativeNode } from '../models/interfaces';
 
 export class RelationshipService {
-  private relativesState: IRelative[] = useCustomSelector(selectRelatives);
+  private relativesState: IRelative[] = useCustomSelector(selectRelatives).relatives;
   private relationshipMap: Map<number, string[]> = new Map<number, string[]>();
 
   private findWifeKeysByKey(key: number): number[] | undefined {
