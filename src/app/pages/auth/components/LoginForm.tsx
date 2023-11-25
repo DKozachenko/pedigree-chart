@@ -1,14 +1,14 @@
+import { SetStateAction, useState, Dispatch as ReactDispatch, useCallback } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
 import { SubmitHandler, useForm, Controller } from 'react-hook-form';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useDispatch } from 'react-redux';
 import { Dispatch } from '@reduxjs/toolkit';
-import { setGuest, setUser, setAdmin, ISetUserPayload, useCustomSelector, selectRelatives, setCurrentRelativeKey, IRelative } from '../../../store';
 import * as yup from "yup"
+import { setGuest, setUser, setAdmin, ISetUserPayload, useCustomSelector, selectRelatives, setCurrentRelativeKey, IRelative } from '../../../store';
 import { findRelativeByUserInfo } from '../../../utils';
-import { SetStateAction, useState, Dispatch as ReactDispatch } from 'react';
-import { NonExistedRelativeAlert } from '.';
+import { NonExistedRelativeAlert } from './NonExistedRelativeAlert';
 
 const formSchema = yup
   .object({
@@ -22,12 +22,7 @@ export function LoginForm() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const { relatives } = useCustomSelector(selectRelatives);
-
   const [isNonExistedRelativeModalOpen, setIsNonExistedRelativeModalOpen]: [boolean, ReactDispatch<SetStateAction<boolean>>] = useState<boolean>(false);
-  
-  const closeNonExistedModal: () => void = () => {
-    setIsNonExistedRelativeModalOpen(false);
-  } 
 
   const { control, handleSubmit, formState: { errors, isValid } } = useForm<ISetUserPayload>({
     resolver: yupResolver(formSchema),
@@ -61,6 +56,10 @@ export function LoginForm() {
     dispatch(setCurrentRelativeKey(null));
     navigate('/');
   }
+
+  const closeNonExistedModal: () => void = useCallback(() => {
+    setIsNonExistedRelativeModalOpen(false);
+  }, []);
 
   return (
     <Box component="form" onSubmit={handleSubmit(login)} sx={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>

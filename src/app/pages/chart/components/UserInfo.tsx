@@ -3,16 +3,16 @@ import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch, setCurre
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useState, Dispatch as ReactDispatch, SetStateAction } from 'react';
-import { RelationshipService } from '../services';
 import { IRelativeNode } from '../models/interfaces';
+import { useRelationships } from '../hooks';
 
 export function UserInfo() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const userState: IUserState = useCustomSelector(selectUser);
-  const relationshipService: RelationshipService = new RelationshipService();
-  const relativesForSelect: Pick<IRelativeNode, 'key' | 'initials'>[] = relationshipService
-    .getRelativesForSelect()
+  
+  const { getRelativesForSelect } = useRelationships();
+  const relativesForSelect: Pick<IRelativeNode, 'key' | 'initials'>[] = getRelativesForSelect()
     .sort((a: Pick<IRelativeNode, 'key' | 'initials'>, b: Pick<IRelativeNode, 'key' | 'initials'>) => a.initials.localeCompare(b.initials));
 
   const [currentRelative, setCurrentRelative]: [string, ReactDispatch<SetStateAction<string>>] = useState<string>('');

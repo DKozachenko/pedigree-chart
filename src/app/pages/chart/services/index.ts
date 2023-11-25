@@ -1,1 +1,0 @@
-export { RelationshipService } from './relationship';
