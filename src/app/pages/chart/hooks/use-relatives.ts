@@ -2,10 +2,10 @@ import { IRelative, selectRelatives, useCustomSelector } from '../../../store'
 import { RELATIONSHIPS_MAP } from '../models/constants';
 import { IRelativeNode } from '../models/interfaces'
 
-export const useRelationships: () => {
+export const useRelatives: () => {
   findRelativeByKey: (key: number) => IRelative,
   getRelativesWithRelationships: (selectedKey: number | null) => IRelativeNode[],
-  getRelativesForSelect: () => Pick<IRelativeNode, 'key' | 'initials'>[]
+  getRelativesForSelect: () => (Pick<IRelativeNode, 'key'> & { label: string })[]
 } = () => {
   const { relatives } = useCustomSelector(selectRelatives);
 
@@ -17,11 +17,11 @@ export const useRelationships: () => {
     return relatives.filter((item: IRelative) => item.parents?.includes(key));
   }
 
-  const buildInitials: (relative: IRelative) => string = (relative: IRelative) => {
-    let result: string = `${relative.lastName} ${relative.name[0].toUpperCase()}.`;
+  const buildLabel: (relative: IRelative) => string = (relative: IRelative) => {
+    let result: string = relative.name;
 
-    if (relative.middleName) {
-      result += `${relative.middleName[0].toUpperCase()}.`;
+    if (relative.lastName.length) {
+      result += ` ${relative.lastName}`;
     }
 
     return result;
@@ -137,7 +137,7 @@ export const useRelationships: () => {
       const relationshipMap: Map<number, string[]> = getRelationsMap(selectedKey);
       mapper = (relative: IRelative) => ({
         ...relative,
-        initials: buildInitials(relative),
+        label: buildLabel(relative),
         ...findParentKeysByKey(relative.key),
         wifeKeys: findWifeKeysByKey(relative.key),
         husbandKeys: findHusbandKeysByKey(relative.key),
@@ -146,7 +146,7 @@ export const useRelationships: () => {
     } else {
       mapper = (relative: IRelative) => ({
         ...relative,
-        initials: buildInitials(relative),
+        label: buildLabel(relative),
         ...findParentKeysByKey(relative.key),
         wifeKeys: findWifeKeysByKey(relative.key),
         husbandKeys: findHusbandKeysByKey(relative.key),
@@ -157,10 +157,10 @@ export const useRelationships: () => {
     return relatives.map(mapper);
   }
 
-  const getRelativesForSelect: () => Pick<IRelativeNode, 'key' | 'initials'>[] = () => {
+  const getRelativesForSelect: () => (Pick<IRelativeNode, 'key'> & { label: string })[] = () => {
     return relatives.map((relative: IRelative) => ({
       key: relative.key,
-      initials: buildInitials(relative)
+      label: buildLabel(relative)
     }))
   } 
 

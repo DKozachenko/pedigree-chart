@@ -4,16 +4,16 @@ import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useState, Dispatch as ReactDispatch, SetStateAction } from 'react';
 import { IRelativeNode } from '../models/interfaces';
-import { useRelationships } from '../hooks';
+import { useRelatives } from '../hooks';
 
 export function UserInfo() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const userState: IUserState = useCustomSelector(selectUser);
   
-  const { getRelativesForSelect } = useRelationships();
-  const relativesForSelect: Pick<IRelativeNode, 'key' | 'initials'>[] = getRelativesForSelect()
-    .sort((a: Pick<IRelativeNode, 'key' | 'initials'>, b: Pick<IRelativeNode, 'key' | 'initials'>) => a.initials.localeCompare(b.initials));
+  const { getRelativesForSelect } = useRelatives();
+  const relativesForSelect: (Pick<IRelativeNode, 'key'> & { label: string })[] = getRelativesForSelect()
+    .sort((a:(Pick<IRelativeNode, 'key'> & { label: string }), b: (Pick<IRelativeNode, 'key'> & { label: string })) => a.label.localeCompare(b.label));
 
   const [currentRelative, setCurrentRelative]: [string, ReactDispatch<SetStateAction<string>>] = useState<string>('');
   
@@ -87,8 +87,8 @@ export function UserInfo() {
               value={currentRelative}
               onChange={onRelativesChange}
             >
-              {relativesForSelect.map((relativeForSelect: Pick<IRelativeNode, 'key' | 'initials'>) => 
-                <MenuItem key={relativeForSelect.key} value={relativeForSelect.key}>{ relativeForSelect.initials }</MenuItem>)}
+              {relativesForSelect.map((relativeForSelect: (Pick<IRelativeNode, 'key'> & { label: string })) => 
+                <MenuItem key={relativeForSelect.key} value={relativeForSelect.key}>{ relativeForSelect.label } ({ relativeForSelect.key })</MenuItem>)}
             </Select>
           </Box>
         </>

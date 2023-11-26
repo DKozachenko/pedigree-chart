@@ -9,7 +9,10 @@ export const useDiagram: (
   diagramConfig: IDiagramConfig,
   onNodeClick: (key: number) => void
 ) => {
-  draw: (nodes: IRelativeNode[], currentRelativeKey: number | null) => void
+  initLayout: (initialRelationshipVisible: boolean) => void,
+  setModel: (nodes: IRelativeNode[], currentRelativeKey: number | null) => void,
+  hasDiagramInit: () => boolean,
+  focusOnNode: (key: number) => void
 } = (
   className: string,
   diagramConfig: IDiagramConfig,
@@ -18,8 +21,7 @@ export const useDiagram: (
   const diagram: MutableRefObject<go.Diagram | null> = useRef<go.Diagram | null>(null);
   const config: MutableRefObject<IDiagramConfig> = useRef<IDiagramConfig>(diagramConfig);
 
-  const draw: (nodes: IRelativeNode[], currentRelativeKey: number | null) => void = 
-    (nodes: IRelativeNode[], currentRelativeKey: number | null) => {
+  const initLayout: (initialRelationshipVisible: boolean) => void = (initialRelationshipVisible: boolean) => {
     const $ = go.GraphObject.make;
 
     if (diagram.current) {
@@ -28,6 +30,7 @@ export const useDiagram: (
 
     const genogram: go.Diagram = new go.Diagram(className, {
       "animationManager.isEnabled": false,
+      scrollMode: go.Diagram.Uniform,
       // автомасштабирование, чтобы все узлы влезли на экран
       // initialAutoScale: go.Diagram.Uniform,
       "undoManager.isEnabled": true,
@@ -50,7 +53,7 @@ export const useDiagram: (
           layerSpacing: 30, 
           columnSpacing: 10 
         }),
-      nodeTemplateMap: getNodeTemplateMap(currentRelativeKey),
+      nodeTemplateMap: getNodeTemplateMap(initialRelationshipVisible),
       linkTemplateMap: getLinkTemplateMap(),
       linkTemplate: 
         $(go.Link, { 
@@ -67,16 +70,15 @@ export const useDiagram: (
     });
 
     diagram.current = genogram;
-    setModel(nodes, currentRelativeKey);
   }
 
   const getTemplateItem: (
     genderKey: 'male' | 'female',
-    currentRelativeKey: number | null
+    initialRelationshipVisible: boolean
   ) => go.Node = 
     (
       genderKey: 'male' | 'female',
-      currentRelativeKey: number | null
+      initialRelationshipVisible: boolean
     ) => {
     const $ = go.GraphObject.make;
 
@@ -117,42 +119,51 @@ export const useDiagram: (
           padding: new go.Margin(5, 10, 5, 10),
         },
           $(go.Panel, { 
-            name: "INITIALS PANEL",
-            type: go.Panel.Horizontal,
+            name: "LABEL PANEL",
+            type: go.Panel.Vertical,
           },
-            $(go.TextBlock, { 
-              textAlign: "center",
-              stroke: config.current.label.textColor
-            },
-            new go.Binding("text", "initials", (name: string) => name)),
             $(go.TextBlock, { 
               textAlign: "center", 
               stroke: config.current.label.textColor,
               font: "Bold 13px sans-serif",
-              margin: new go.Margin(0, 0, 0, 3)
+              margin: new go.Margin(0, 0, 3, 0)
             },
             new go.Binding("text", "key", (key: number) => ` (ID: ${key})`)),
-          ), currentRelativeKey
-            ? $(go.TextBlock, { 
+            $(go.TextBlock, { 
+              textAlign: "center",
+              stroke: config.current.label.textColor,
+              margin: new go.Margin(0, 0, 3, 0)
+            },
+            new go.Binding("text", "name", (name: string) => name)),
+            $(go.TextBlock, { 
+              textAlign: "center",
+              stroke: config.current.label.textColor
+            },
+            new go.Binding("text", "lastName", (name: string) => name)),
+          ),
+            $(go.TextBlock, { 
                 textAlign: "center", 
                 font: "Italic 13px sans-serif",
-                stroke: config.current.label.textColor
+                stroke: config.current.label.textColor,
+                margin: new go.Margin(3, 0, 0, 0),
+                visible: initialRelationshipVisible
               },
-              new go.Binding("text", "relationship"))
-            : {}
+              new go.Binding("text", "relationship"),
+              new go.Binding("visible", "relationship", (relationship: string | undefined) => !!relationship)
+            ),
         )
       ))
     )
   }
 
-  const getNodeTemplateMap: (currentRelativeKey: number | null) => go.Map<string, go.Node> = (currentRelativeKey: number | null) => {
+  const getNodeTemplateMap: (initialRelationshipVisible: boolean) => go.Map<string, go.Node> = (initialRelationshipVisible: boolean) => {
     const $ = go.GraphObject.make;
     const result: go.Map<string, go.Node> = new go.Map<string, go.Node>();
     
     // Мужчины
-    result.add("M", getTemplateItem('male', currentRelativeKey));
+    result.add("M", getTemplateItem('male', initialRelationshipVisible));
     // Женщины
-    result.add("F", getTemplateItem('female', currentRelativeKey));
+    result.add("F", getTemplateItem('female', initialRelationshipVisible));
     // чтобы ничего не отображалось на ссылке для "брака"
     result.add("LinkLabel",
       $(go.Node, { 
@@ -199,13 +210,21 @@ export const useDiagram: (
     setupParents();
 
     if (currentRelativeKey) {
-      const node: go.Node | null = (<go.Diagram>diagram.current).findNodeForKey(currentRelativeKey);
+      focusOnNode(currentRelativeKey);
+    }
+  }
 
-      if (node) { 
-        // TODO: как-то заселектить ноду и отцентрироваться по ней
-        node.isSelected = true; 
-        (<go.Diagram>diagram.current).select(node);
-      }
+  const focusOnNode: (key: number) => void = (key: number) => {
+    const node: go.Node | null = (<go.Diagram>diagram.current).findNodeForKey(key);
+
+    if (node) { 
+      node.isSelected = true; 
+      // Костыль для получения `node.actualBounds`
+      setTimeout(() => {
+        (diagram.current as go.Diagram).select(node);
+        (diagram.current as go.Diagram).centerRect(node.actualBounds);
+      }, 0);
+      
     }
   }
 
@@ -310,5 +329,14 @@ export const useDiagram: (
     }
   }
 
-  return { draw };
+  const hasDiagramInit: () => boolean = () => {
+    return !!diagram.current;
+  }
+
+  return { 
+    initLayout, 
+    setModel, 
+    hasDiagramInit,
+    focusOnNode
+  };
 }

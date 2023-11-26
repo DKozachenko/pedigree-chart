@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import { IDiagramConfig, IRelative, selectDiagramConfig, selectRelatives, useCustomSelector } from '../../../store';
 import { RelativeInfoModal } from './RelativeInfoModal';
 import { GENOGRAM_CLASS } from '../models/constants';
-import { useDiagram, useRelationships } from '../hooks';
+import { useDiagram, useRelatives } from '../hooks';
 import { IRelativeNode } from '../models/interfaces';
 
 export function Diagram() {
@@ -12,17 +12,28 @@ export function Diagram() {
   const [isInfoModalOpen, setIsInfoModalOpen]: [boolean, Dispatch<SetStateAction<boolean>>] = useState<boolean>(false);
   const [selectedRelative, setSelectedRelative]: [IRelative | null, Dispatch<SetStateAction<IRelative | null>>] = useState<IRelative | null>(null);
   
-  const { findRelativeByKey, getRelativesWithRelationships } = useRelationships();
+  const { findRelativeByKey, getRelativesWithRelationships } = useRelatives();
   const showRelativeInfo: (key: number) => void = useCallback((key: number) => {
     const relative: IRelative = findRelativeByKey(key);
     setSelectedRelative(relative);
     setIsInfoModalOpen(true);
   }, []);
-  const { draw } = useDiagram(GENOGRAM_CLASS, diagramConfigState, showRelativeInfo);
+  const { initLayout, setModel, focusOnNode, hasDiagramInit } = useDiagram(GENOGRAM_CLASS, diagramConfigState, showRelativeInfo);
 
   useEffect(() => {
+    initLayout(!!currentRelativeKey);
+  }, []);
+
+  useEffect(() => {
+    if (!hasDiagramInit()) {
+      return;
+    }
     const nodes: IRelativeNode[] = getRelativesWithRelationships(currentRelativeKey);
-    draw(nodes, currentRelativeKey);
+    setModel(nodes, currentRelativeKey);
+    
+    if (currentRelativeKey) {
+      focusOnNode(currentRelativeKey);
+    }
   }, [currentRelativeKey]);
 
   const closeInfoModal: () => void = useCallback(() => {
