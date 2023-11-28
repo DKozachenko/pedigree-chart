@@ -1,0 +1,1 @@
+export type { RelativeForSearch } from './relative-for-search';

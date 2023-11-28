@@ -7,21 +7,20 @@ import { IRelativeNode } from '../models/interfaces';
 export const useDiagram: (
   className: string,
   diagramConfig: IDiagramConfig,
-  onNodeClick: (key: number) => void
 ) => {
-  initLayout: (initialRelationshipVisible: boolean) => void,
-  setModel: (nodes: IRelativeNode[], currentRelativeKey: number | null) => void,
+  initLayout: (initialRelationshipVisible: boolean, onNodeClick: (key: number) => void) => void,
+  setModel: (nodes: IRelativeNode[]) => void,
   hasDiagramInit: () => boolean,
   focusOnNode: (key: number) => void
 } = (
   className: string,
   diagramConfig: IDiagramConfig,
-  onNodeClick: (key: number) => void
 ) => {
   const diagram: MutableRefObject<go.Diagram | null> = useRef<go.Diagram | null>(null);
   const config: MutableRefObject<IDiagramConfig> = useRef<IDiagramConfig>(diagramConfig);
 
-  const initLayout: (initialRelationshipVisible: boolean) => void = (initialRelationshipVisible: boolean) => {
+  const initLayout: (initialRelationshipVisible: boolean, onNodeClick: (key: number) => void) => void = 
+    (initialRelationshipVisible: boolean, onNodeClick: (key: number) => void) => {
     const $ = go.GraphObject.make;
 
     if (diagram.current) {
@@ -53,7 +52,7 @@ export const useDiagram: (
           layerSpacing: 30, 
           columnSpacing: 10 
         }),
-      nodeTemplateMap: getNodeTemplateMap(initialRelationshipVisible),
+      nodeTemplateMap: getNodeTemplateMap(initialRelationshipVisible, onNodeClick),
       linkTemplateMap: getLinkTemplateMap(),
       linkTemplate: 
         $(go.Link, { 
@@ -74,11 +73,13 @@ export const useDiagram: (
 
   const getTemplateItem: (
     genderKey: 'male' | 'female',
-    initialRelationshipVisible: boolean
+    initialRelationshipVisible: boolean,
+    onNodeClick: (key: number) => void
   ) => go.Node = 
     (
       genderKey: 'male' | 'female',
-      initialRelationshipVisible: boolean
+      initialRelationshipVisible: boolean,
+      onNodeClick: (key: number) => void
     ) => {
     const $ = go.GraphObject.make;
 
@@ -156,14 +157,15 @@ export const useDiagram: (
     )
   }
 
-  const getNodeTemplateMap: (initialRelationshipVisible: boolean) => go.Map<string, go.Node> = (initialRelationshipVisible: boolean) => {
+  const getNodeTemplateMap: (initialRelationshipVisible: boolean, onNodeClick: (key: number) => void) => go.Map<string, go.Node> = 
+    (initialRelationshipVisible: boolean, onNodeClick: (key: number) => void) => {
     const $ = go.GraphObject.make;
     const result: go.Map<string, go.Node> = new go.Map<string, go.Node>();
     
     // Мужчины
-    result.add("M", getTemplateItem('male', initialRelationshipVisible));
+    result.add("M", getTemplateItem('male', initialRelationshipVisible, onNodeClick));
     // Женщины
-    result.add("F", getTemplateItem('female', initialRelationshipVisible));
+    result.add("F", getTemplateItem('female', initialRelationshipVisible, onNodeClick));
     // чтобы ничего не отображалось на ссылке для "брака"
     result.add("LinkLabel",
       $(go.Node, { 
@@ -198,8 +200,7 @@ export const useDiagram: (
     return result;
   }
 
-  const setModel: (nodes: IRelativeNode[], currentRelativeKey: number | null) => void = 
-    (nodes: IRelativeNode[], currentRelativeKey: number | null) => {
+  const setModel: (nodes: IRelativeNode[]) => void = (nodes: IRelativeNode[]) => {
     (<go.Diagram>diagram.current).model = new go.GraphLinksModel({
       linkLabelKeysProperty: "labelKeys",
       nodeCategoryProperty: "gender",
@@ -208,10 +209,6 @@ export const useDiagram: (
     });
     setupMarriages();
     setupParents();
-
-    if (currentRelativeKey) {
-      focusOnNode(currentRelativeKey);
-    }
   }
 
   const focusOnNode: (key: number) => void = (key: number) => {

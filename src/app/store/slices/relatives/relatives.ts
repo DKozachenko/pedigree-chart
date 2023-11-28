@@ -7,15 +7,20 @@ export const relativesSlice = createSlice({
   name: 'relatives',
   initialState: <IRelativeState>{
     relatives: DEFAULT_DATA,
-    currentRelativeKey: null
+    currentRelativeKey: null,
+    centeredRelativeKey: null
   },
   reducers: {
     setCurrentRelativeKey: (state, action: PayloadAction<number | null>): void => {
       state.currentRelativeKey = action.payload;
+      state.centeredRelativeKey = action.payload;
+    },
+    setCenteredRelativeKey: (state, action: PayloadAction<number | null>): void => {
+      state.centeredRelativeKey = action.payload;
     }
   },
 });
 
-export const { setCurrentRelativeKey } = relativesSlice.actions;
+export const { setCurrentRelativeKey, setCenteredRelativeKey } = relativesSlice.actions;
 export const selectRelatives = (state: State) => state.relatives;
 export const relativesReducer = relativesSlice.reducer;

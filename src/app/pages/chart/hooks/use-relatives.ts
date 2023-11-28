@@ -1,11 +1,12 @@
 import { IRelative, selectRelatives, useCustomSelector } from '../../../store'
 import { RELATIONSHIPS_MAP } from '../models/constants';
 import { IRelativeNode } from '../models/interfaces'
+import { RelativeForSearch } from '../models/types';
 
 export const useRelatives: () => {
   findRelativeByKey: (key: number) => IRelative,
   getRelativesWithRelationships: (selectedKey: number | null) => IRelativeNode[],
-  getRelativesForSelect: () => (Pick<IRelativeNode, 'key'> & { label: string })[]
+  getRelativesForSearch: () => RelativeForSearch[]
 } = () => {
   const { relatives } = useCustomSelector(selectRelatives);
 
@@ -157,7 +158,7 @@ export const useRelatives: () => {
     return relatives.map(mapper);
   }
 
-  const getRelativesForSelect: () => (Pick<IRelativeNode, 'key'> & { label: string })[] = () => {
+  const getRelativesForSearch: () => RelativeForSearch[] = () => {
     return relatives.map((relative: IRelative) => ({
       key: relative.key,
       label: buildLabel(relative)
@@ -167,6 +168,6 @@ export const useRelatives: () => {
   return {
     findRelativeByKey,
     getRelativesWithRelationships,
-    getRelativesForSelect
+    getRelativesForSearch
   }
 }

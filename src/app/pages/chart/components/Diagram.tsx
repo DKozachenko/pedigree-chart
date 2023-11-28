@@ -8,20 +8,21 @@ import { IRelativeNode } from '../models/interfaces';
 
 export function Diagram() {
   const diagramConfigState: IDiagramConfig = useCustomSelector(selectDiagramConfig);
-  const { currentRelativeKey } = useCustomSelector(selectRelatives);
+  const { currentRelativeKey, centeredRelativeKey } = useCustomSelector(selectRelatives);
   const [isInfoModalOpen, setIsInfoModalOpen]: [boolean, Dispatch<SetStateAction<boolean>>] = useState<boolean>(false);
   const [selectedRelative, setSelectedRelative]: [IRelative | null, Dispatch<SetStateAction<IRelative | null>>] = useState<IRelative | null>(null);
   
   const { findRelativeByKey, getRelativesWithRelationships } = useRelatives();
+  const { initLayout, setModel, focusOnNode, hasDiagramInit } = useDiagram(GENOGRAM_CLASS, diagramConfigState);
+
   const showRelativeInfo: (key: number) => void = useCallback((key: number) => {
     const relative: IRelative = findRelativeByKey(key);
     setSelectedRelative(relative);
     setIsInfoModalOpen(true);
   }, []);
-  const { initLayout, setModel, focusOnNode, hasDiagramInit } = useDiagram(GENOGRAM_CLASS, diagramConfigState, showRelativeInfo);
 
   useEffect(() => {
-    initLayout(!!currentRelativeKey);
+    initLayout(!!currentRelativeKey, showRelativeInfo);
   }, []);
 
   useEffect(() => {
@@ -29,12 +30,18 @@ export function Diagram() {
       return;
     }
     const nodes: IRelativeNode[] = getRelativesWithRelationships(currentRelativeKey);
-    setModel(nodes, currentRelativeKey);
-    
-    if (currentRelativeKey) {
-      focusOnNode(currentRelativeKey);
-    }
+    setModel(nodes);
   }, [currentRelativeKey]);
+
+  useEffect(() => {
+    if (!hasDiagramInit()) {
+      return;
+    }
+
+    if (centeredRelativeKey) {
+      focusOnNode(centeredRelativeKey);
+    }
+  }, [centeredRelativeKey]);
 
   const closeInfoModal: () => void = useCallback(() => {
     setIsInfoModalOpen(false);

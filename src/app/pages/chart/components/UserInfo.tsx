@@ -1,21 +1,14 @@
-import { Box, Button, InputLabel, MenuItem, Paper, Select, SelectChangeEvent, Typography } from '@mui/material';
-import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch, setCurrentRelativeKey } from '../../../store';
+import { Box, Button, Paper, Typography } from '@mui/material';
+import { IUserState, selectUser, useCustomSelector, dropUser, Dispatch, setCurrentRelativeKey, setCenteredRelativeKey } from '../../../store';
 import { NavigateFunction, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { useState, Dispatch as ReactDispatch, SetStateAction } from 'react';
-import { IRelativeNode } from '../models/interfaces';
-import { useRelatives } from '../hooks';
+import { RelativesSearch } from './RelativesSearch';
+import { useCallback } from 'react';
 
 export function UserInfo() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const userState: IUserState = useCustomSelector(selectUser);
-  
-  const { getRelativesForSelect } = useRelatives();
-  const relativesForSelect: (Pick<IRelativeNode, 'key'> & { label: string })[] = getRelativesForSelect()
-    .sort((a:(Pick<IRelativeNode, 'key'> & { label: string }), b: (Pick<IRelativeNode, 'key'> & { label: string })) => a.label.localeCompare(b.label));
-
-  const [currentRelative, setCurrentRelative]: [string, ReactDispatch<SetStateAction<string>>] = useState<string>('');
   
   const extractUserInfo: () => string = () => {
     if (userState.isAdmin) {
@@ -36,11 +29,13 @@ export function UserInfo() {
     navigate('/auth');
   }
   
-  const onRelativesChange = (event: SelectChangeEvent) => {
-    const personKey: string = event.target.value;
-    setCurrentRelative(personKey);
-    dispatch(setCurrentRelativeKey(+personKey));
-  };
+  const onRelativesChange = useCallback((key: number | null) => {
+    if (userState.isAdmin) {
+      dispatch(setCurrentRelativeKey(key));
+      return;
+    }
+    dispatch(setCenteredRelativeKey(key));
+  }, []);
 
   return (
     <Box component="div" sx={{
@@ -69,30 +64,7 @@ export function UserInfo() {
         </Paper>
       }
 
-      { userState.isAdmin &&
-        <>
-          <Paper variant="outlined" sx={{ bgcolor: '#f0f0f0', border: '1px solid #787878', p: 0.5, my: 1 }}>
-            <Typography variant="caption">
-              Вам доступен просмотр родственных связей от лица любого родственника
-            </Typography>
-          </Paper>
-
-          <Box component="div">
-            <InputLabel id="relatives-label">Родственники</InputLabel>
-            <Select
-              labelId="relatives-label"
-              id="relatives"
-              label="Родственники"
-              fullWidth
-              value={currentRelative}
-              onChange={onRelativesChange}
-            >
-              {relativesForSelect.map((relativeForSelect: (Pick<IRelativeNode, 'key'> & { label: string })) => 
-                <MenuItem key={relativeForSelect.key} value={relativeForSelect.key}>{ relativeForSelect.label } ({ relativeForSelect.key })</MenuItem>)}
-            </Select>
-          </Box>
-        </>
-      }
+      <RelativesSearch onChange={onRelativesChange}></RelativesSearch>
 
       <Button type="button" variant="outlined" fullWidth sx={{ mt: 1.5 }} onClick={logout}>
         Выйти
