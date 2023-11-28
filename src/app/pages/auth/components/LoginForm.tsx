@@ -18,13 +18,15 @@ const formSchema = yup
   })
   .required();
 
+type FormType = Omit<ISetUserPayload, 'middleName'> & { middleName?: string | null };
+
 export function LoginForm() {
   const navigate: NavigateFunction = useNavigate();
   const dispatch: Dispatch = useDispatch();
   const { relatives } = useCustomSelector(selectRelatives);
   const [isNonExistedRelativeModalOpen, setIsNonExistedRelativeModalOpen]: [boolean, ReactDispatch<SetStateAction<boolean>>] = useState<boolean>(false);
 
-  const { control, handleSubmit, formState: { errors, isValid } } = useForm<ISetUserPayload>({
+  const { control, handleSubmit, formState: { errors, isValid } } = useForm<FormType>({
     resolver: yupResolver(formSchema),
     defaultValues: {
       name: '',
@@ -34,13 +36,17 @@ export function LoginForm() {
     mode: 'onChange'
   });
 
-  const login: SubmitHandler<ISetUserPayload> = (data: ISetUserPayload) => {
-    const currentRelative: IRelative | undefined = findRelativeByUserInfo(relatives, data);
+  const login: SubmitHandler<FormType> = (data: FormType) => {
+    const payloadData: ISetUserPayload = {
+      ...data,
+      middleName: data.middleName ?? null
+    }
+    const currentRelative: IRelative | undefined = findRelativeByUserInfo(relatives, payloadData);
     if (!currentRelative) {
       setIsNonExistedRelativeModalOpen(true);
       return;
     }
-    dispatch(setUser(data));
+    dispatch(setUser(payloadData));
     dispatch(setCurrentRelativeKey(currentRelative.key));
     navigate('/');
   }
@@ -69,10 +75,13 @@ export function LoginForm() {
           control={control}
           rules={{ required: true }}
           render={({ field }) => <>
-            <TextField label="Имя"
+            <TextField
+              label="Имя"
               variant="outlined"
               fullWidth
-              margin="none" {...field} 
+              margin="none" 
+              error={!!errors.name?.message}
+              {...field}
             />
             { errors.name?.message && 
               <Typography color="error"  variant="caption" sx={{ 
@@ -95,10 +104,13 @@ export function LoginForm() {
           control={control}
           rules={{ required: true }}
           render={({ field }) => <>
-            <TextField label="Фамилия"
+            <TextField 
+              label="Фамилия"
               variant="outlined"
               fullWidth
-              margin="none" {...field} 
+              margin="none"
+              error={!!errors.lastName?.message}
+              {...field} 
             />
             { errors.lastName?.message && 
               <Typography color="error"  variant="caption" sx={{ 
@@ -119,10 +131,13 @@ export function LoginForm() {
         <Controller
           name="middleName"
           control={control}
-          render={({ field }) => <TextField label="Отчество"
+          render={({ field }) => 
+            <TextField 
+              label="Отчество"
               variant="outlined"
               fullWidth
-              margin="none" {...field} 
+              margin="none" 
+              {...field} 
             />
           }
         />

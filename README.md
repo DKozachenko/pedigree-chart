@@ -1,27 +1,48 @@
-# React + TypeScript + Vite
+# pedigree-chart
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Приложение для просмотра диаграммы родословной.
 
-Currently, two official plugins are available:
+## Стек
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+* Vite
+* Typescript
+* React
+* GoJS
 
-## Expanding the ESLint configuration
+## Модель
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+В качестве модели выступает интерфейс `IRelative` со следуюшими полями:
 
-- Configure the top-level `parserOptions` property like this:
+* `key` - уникальный идентификатор, исторически лучше указывать положительное целое число **(обязательное)**.
+* `name` - имя **(обязательное)**.
+* `lastName` - фамилия **(обязательное)**.
+* `middleName` - отчество *(необязательное)*.
+* `gender` - пол, `F` или `M` **(обязательное)**.
+* `parents` - родители, массив из одного или двух идентификаторов *(необязательное)*.
 
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
+Данные должны находиться по пути `./src/app/store/slices/relatives/default-data.ts`;
+
+Из него должна экспортироваться константа `DEFAULT_DATA`, которая представляет собой массив `IRelative`.
+
+## Запуск в режиме разработки
+
+```bash
+npm i  
+npm run start
 ```
 
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+## Сборка
+
+```bash
+npm i  
+npm run build
+```
+
+## Запуск в Docker контейнере
+
+```bash
+docker build . -t pedigree-chart-image  -f  Dockerfile.local  
+docker run -d -p 5173:80 pedigree-chart-image:latest
+```
+
+Приложение можно просмотреть по адресу `http://localhost:5173`.

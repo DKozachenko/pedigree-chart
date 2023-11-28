@@ -1,4 +1,8 @@
 export const RELATIONSHIPS_MAP: Map<RegExp, string> = new Map<RegExp, string>([
+  [/^c[M|F]-pF$/, 'Жена / бывшая жена'],
+  [/^c[M|F]-pM$/, 'Муж / бывший муж'],
+  [/^cF$/, 'Дочь'],
+  [/^cM$/, 'Сын'],
   [/^pF$/, 'Мама'],
   [/^pM$/, 'Папа'],
   [/^p[M|F]-pF$/, 'Бабушка'],
